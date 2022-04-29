@@ -863,7 +863,7 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
 
     status = aewb_write_to_sensor(handle);
 
-    aewb_logger_send_log(handle->aewb_logger_sender_state_ptr, handle);
+    aewb_logger_send_log(handle->aewb_logger_sender_state_ptr, handle, h3a_ptr);
 
     return status;
 }

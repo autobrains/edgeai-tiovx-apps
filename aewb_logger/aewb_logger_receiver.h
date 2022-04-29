@@ -18,7 +18,7 @@ typedef struct _AewbHandle AewbHandle;
 struct _aewb_logger_receiver_state_t {
     struct sockaddr_in bind_addr; 
     int sock_fd; 
-    log_AewbHandle buffer;
+    log_aewb_message_t buffer;
 };
 typedef struct _aewb_logger_receiver_state_t aewb_logger_receiver_state_t;
 

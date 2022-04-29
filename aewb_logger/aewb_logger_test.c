@@ -33,6 +33,7 @@ void test_write_read_log()
     dcc_parser_input_params_t sender_dcc_input_params;
     awbprm_t sender_awb_params;
     tiae_prm_t sender_tiae_prm;
+    tivx_h3a_data_t sender_h3a;
 
     sender_handle.ti_2a_wrapper.dcc_input_params = &sender_dcc_input_params;
     sender_handle.ti_2a_wrapper.p_ae_params = &sender_tiae_prm;  
@@ -44,21 +45,23 @@ void test_write_read_log()
     sender_handle.ti_2a_wrapper.p_ae_params->exposure_program.exposure_time_range[0].min = 1515;
     sender_handle.sensor_in_data.ae_dynPrms.targetBrightness = 1616;
     sender_handle.sensor_out_data.aePrms.exposureTime[0] = 1717;
+    sender_h3a.aew_config.aewwin1_WINW = 1818;
     
-    log_AewbHandle buffer;
+    log_aewb_message_t buffer;
 
     int32_t n_written;
-    n_written = aewb_logger_write_log_to_buffer(&sender_handle, &buffer);
+    n_written = aewb_logger_write_log_to_buffer(&sender_handle, &sender_h3a, &buffer);
 
     printf("test_write_read_log: n_written=%d\n",n_written);
     assert(n_written==sizeof(log_AewbHandle));
 
-    assert(buffer.aewb_config.awb_num_skip_frames == 121);
-    assert(buffer.ti_2a_wrapper.frame_count == 1313);
-    assert(buffer.ti_2a_wrapper.dcc_input_params.exposure_time == 1414);
-    assert(buffer.ti_2a_wrapper.ae_params.exposure_program.exposure_time_range[0].min == 1515);
-    assert(buffer.ae_dynPrms.targetBrightness == 1616);
-    assert(buffer.aePrms.exposureTime[0] == 1717);
+    assert(buffer.handle.aewb_config.awb_num_skip_frames == 121);
+    assert(buffer.handle.ti_2a_wrapper.frame_count == 1313);
+    assert(buffer.handle.ti_2a_wrapper.dcc_input_params.exposure_time == 1414);
+    assert(buffer.handle.ti_2a_wrapper.ae_params.exposure_program.exposure_time_range[0].min == 1515);
+    assert(buffer.handle.ae_dynPrms.targetBrightness == 1616);
+    assert(buffer.handle.aePrms.exposureTime[0] == 1717);
+    assert(buffer.h3a_data.aew_config.aewwin1_WINW == 1818);
 }
 
 void test_send_recv_log()
@@ -67,6 +70,7 @@ void test_send_recv_log()
     dcc_parser_input_params_t sender_dcc_input_params;
     awbprm_t sender_awb_params;
     tiae_prm_t sender_tiae_prm;
+    tivx_h3a_data_t sender_h3a;
 
     sender_handle.ti_2a_wrapper.dcc_input_params = &sender_dcc_input_params;
     sender_handle.ti_2a_wrapper.p_ae_params = &sender_tiae_prm;  
@@ -77,12 +81,12 @@ void test_send_recv_log()
     aewb_logger_sender_state_t *sender = aewb_logger_create_sender("192.168.5.3", 4321);
     aewb_logger_receiver_state_t *receiver = aewb_logger_create_receiver("192.168.5.3", 4321);
 
-    int32_t n_written = aewb_logger_send_log(sender, &sender_handle);
+    int32_t n_written = aewb_logger_send_log(sender, &sender_handle, &sender_h3a);
     int32_t n_read = aewb_logger_recv_log(receiver);
 
-    assert(n_written>1000);
+    assert(n_written==sizeof(log_aewb_message_t));
     assert(n_written==n_read);
-    assert(receiver->buffer.aewb_config.awb_num_skip_frames == 121);
+    assert(receiver->buffer.handle.aewb_config.awb_num_skip_frames == 121);
 
     aewb_logger_destroy_sender(sender);
     aewb_logger_destroy_receiver(receiver);    

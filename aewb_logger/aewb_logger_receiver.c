@@ -41,9 +41,9 @@ int32_t aewb_logger_recv_bytes(aewb_logger_receiver_state_t *p_state)
                  MSG_WAITALL, (struct sockaddr *)&src_addr,
                  &src_addr_len);
 
-    if (num_bytes_written!=sizeof(log_AewbHandle))
-        printf("aewb_logger_recv_bytes: error num_bytes_written!=sizeof(log_AewbHandle), %d!=%lu",
-                num_bytes_written, sizeof(log_AewbHandle));
+    if (num_bytes_written!=sizeof(p_state->buffer))
+        printf("aewb_logger_recv_bytes: error num_bytes_written!=sizeof(p_state->buffer), %d!=%lu\n",
+                num_bytes_written, sizeof(p_state->buffer));
     return num_bytes_written;
 }
 

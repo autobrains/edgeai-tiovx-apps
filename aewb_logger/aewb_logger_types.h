@@ -1,6 +1,7 @@
 #ifndef _AEWB_LOGGER_TYPES_H
 #define _AEWB_LOGGER_TYPES_H
 #include <stdint.h>
+#include <time.h>
 
 #define LOG_TIAE_MAX_RANGES 16
 #define LOG_TIAE_MAX_HIST   16
@@ -267,5 +268,17 @@ typedef struct {
     /*! Payload of the AEW or AF data */
     // uint8_t                     data[TIVX_VPAC_VISS_MAX_H3A_STAT_NUMBYTES];
 } log_tivx_h3a_data_t;
+
+typedef struct {
+    struct timespec timestamp;
+    uint32_t frame_id;    
+} log_aewb_header_t;
+
+typedef struct {
+    log_aewb_header_t header;
+    log_AewbHandle handle;
+    log_tivx_h3a_data_t h3a_data;
+} log_aewb_message_t;
+
 
 #endif //_AEWB_LOGGER_TYPES_H
