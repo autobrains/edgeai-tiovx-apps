@@ -93,11 +93,11 @@ if ("${EDGEAI_INCLUDE_PATH}" STREQUAL "")
     set(EDGEAI_INCLUDE_PATH ${TARGET_FS}/usr/include/)
 endif()
 
-
 include_directories(${PROJECT_SOURCE_DIR}
                     ${PROJECT_SOURCE_DIR}/modules/include
                     ${PROJECT_SOURCE_DIR}/modules/core/include
                     ${PROJECT_SOURCE_DIR}/utils/include
+                    ${PROJECT_SOURCE_DIR}/aewb_logger/
                     ${PSDK_INCLUDE_PATH}/processor_sdk/ivision
                     ${PSDK_INCLUDE_PATH}/processor_sdk/imaging
                     ${PSDK_INCLUDE_PATH}/processor_sdk/ti-perception-toolkit/include
@@ -162,6 +162,7 @@ endif()
 
 set(COMMON_LINK_LIBS
     edgeai-tiovx-apps
+    aewb_logger
     )
 
 # Function for building a node:

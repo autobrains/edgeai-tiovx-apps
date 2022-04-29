@@ -721,18 +721,6 @@ void aewb_init_cfg(AewbCfg *cfg)
     cfg->awb_num_skip_frames = 0;
 }
 
-struct _AewbHandle {
-    AewbCfg             cfg;
-    tivx_aewb_config_t  aewb_config;
-    SensorObj           sensor_obj;
-    uint8_t             *dcc_2a_buf;
-    uint32_t            dcc_2a_buf_size;
-    TI_2A_wrapper       ti_2a_wrapper;
-    sensor_config_get   sensor_in_data;
-    sensor_config_set   sensor_out_data;
-    int fd;
-};
-
 AewbHandle *aewb_create_handle(AewbCfg *cfg)
 {
     AewbHandle *handle = NULL;
@@ -802,6 +790,8 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg)
     } else {
       get_imx219_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     }
+
+    handle->aewb_logger_sender_state_ptr = aewb_logger_create_sender("192.168.5.1", 8081);
 
     return handle;
 
@@ -873,6 +863,8 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
 
     status = aewb_write_to_sensor(handle);
 
+    aewb_logger_send_log(handle->aewb_logger_sender_state_ptr, handle, h3a_ptr, aewb_ptr);
+
     return status;
 }
 
@@ -884,7 +876,9 @@ int aewb_delete_handle(AewbHandle *handle)
     tivxMemFree((void *)handle->dcc_2a_buf, handle->dcc_2a_buf_size,
             TIVX_MEM_EXTERNAL);
     close(handle->fd);
+    aewb_logger_destroy_sender(handle->aewb_logger_sender_state_ptr);
     free(handle);
 
     return status;
 }
+
