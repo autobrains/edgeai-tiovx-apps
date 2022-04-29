@@ -24,7 +24,7 @@ aewb_logger_sender_state_t *aewb_logger_create_sender(const char *dest_ip, in_po
     return p_state;   
 }
 
-void copy_to_log_message(log_aewb_message_t *dest, AewbHandle *src_handle, tivx_h3a_data_t *src_h3a_data)
+void copy_to_log_message(log_aewb_message_t *dest, AewbHandle *src_handle, tivx_h3a_data_t *src_h3a_data, tivx_ae_awb_params_t *src_ae_awb_result)
 {
     // Copying log_tivx_aewb_config_t
     dest->handle.aewb_config.sensor_dcc_id       = src_handle->aewb_config.sensor_dcc_id;
@@ -58,6 +58,11 @@ void copy_to_log_message(log_aewb_message_t *dest, AewbHandle *src_handle, tivx_
     dest->handle.ti_2a_wrapper.ae_params.frame_num_count           = src_handle->ti_2a_wrapper.p_ae_params->frame_num_count;
     dest->handle.ti_2a_wrapper.ae_params.frame_num_start           = src_handle->ti_2a_wrapper.p_ae_params->frame_num_start;
     dest->handle.ti_2a_wrapper.ae_params.frame_num_period          = src_handle->ti_2a_wrapper.p_ae_params->frame_num_period;  
+    
+    dest->handle.ti_2a_wrapper.ae_params.prev_ae.aperture_size          = src_handle->ti_2a_wrapper.p_ae_params->prev_ae.aperture_size;  
+    dest->handle.ti_2a_wrapper.ae_params.prev_ae.exposure_time          = src_handle->ti_2a_wrapper.p_ae_params->prev_ae.exposure_time;  
+    dest->handle.ti_2a_wrapper.ae_params.prev_ae.analog_gain            = src_handle->ti_2a_wrapper.p_ae_params->prev_ae.analog_gain;  
+    dest->handle.ti_2a_wrapper.ae_params.prev_ae.digital_gain           = src_handle->ti_2a_wrapper.p_ae_params->prev_ae.digital_gain;  
 
     dest->handle.ti_2a_wrapper.ae_params.exposure_program.target_brightness           = src_handle->ti_2a_wrapper.p_ae_params->exposure_program.target_brightness;
     dest->handle.ti_2a_wrapper.ae_params.exposure_program.target_brightness_range.min = src_handle->ti_2a_wrapper.p_ae_params->exposure_program.target_brightness_range.min;
@@ -76,42 +81,9 @@ void copy_to_log_message(log_aewb_message_t *dest, AewbHandle *src_handle, tivx_
         dest->handle.ti_2a_wrapper.ae_params.exposure_program.digital_gain_range[i].max  = src_handle->ti_2a_wrapper.p_ae_params->exposure_program.digital_gain_range[i].max;
     }
 
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.exposure_time     = src_handle->ti_2a_wrapper.ae_awb_result_prev.exposure_time;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.analog_gain       = src_handle->ti_2a_wrapper.ae_awb_result_prev.analog_gain;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.ae_valid          = src_handle->ti_2a_wrapper.ae_awb_result_prev.ae_valid;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.ae_converged      = src_handle->ti_2a_wrapper.ae_awb_result_prev.ae_converged;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.digital_gain      = src_handle->ti_2a_wrapper.ae_awb_result_prev.digital_gain;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_gains[0]       = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_gains[0];
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_gains[1]       = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_gains[1];
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_gains[2]       = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_gains[2];
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_gains[3]       = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_gains[3];
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_offsets[0]     = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_offsets[0];
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_offsets[1]     = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_offsets[1];
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_offsets[2]     = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_offsets[2];
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_offsets[3]     = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_offsets[3];
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.color_temperature = src_handle->ti_2a_wrapper.ae_awb_result_prev.color_temperature;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.awb_valid         = src_handle->ti_2a_wrapper.ae_awb_result_prev.awb_valid;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.awb_converged     = src_handle->ti_2a_wrapper.ae_awb_result_prev.awb_converged;
-
     for (int i = 0; i < LOG_TIAE_MAX_HIST; i++) {
         dest->handle.ti_2a_wrapper.ae_params.history_brightness[i]  = src_handle->ti_2a_wrapper.p_ae_params->history_brightness[i];
     }    
-
-    // Copying ti_2a_wrapper.ae_awb_result_prev
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.h3a_source_data    = src_handle->ti_2a_wrapper.ae_awb_result_prev.h3a_source_data;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.exposure_time      = src_handle->ti_2a_wrapper.ae_awb_result_prev.exposure_time;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.analog_gain        = src_handle->ti_2a_wrapper.ae_awb_result_prev.analog_gain;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.ae_valid           = src_handle->ti_2a_wrapper.ae_awb_result_prev.ae_valid;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.ae_converged       = src_handle->ti_2a_wrapper.ae_awb_result_prev.ae_converged;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.digital_gain       = src_handle->ti_2a_wrapper.ae_awb_result_prev.digital_gain;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.color_temperature  = src_handle->ti_2a_wrapper.ae_awb_result_prev.color_temperature;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.awb_valid          = src_handle->ti_2a_wrapper.ae_awb_result_prev.awb_valid;
-    dest->handle.ti_2a_wrapper.ae_awb_result_prev.awb_converged      = src_handle->ti_2a_wrapper.ae_awb_result_prev.awb_converged;     
-    for (int i = 0; i < 4; i++) {
-        dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_gains[i]    = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_gains[i];
-        dest->handle.ti_2a_wrapper.ae_awb_result_prev.wb_offsets[i]  = src_handle->ti_2a_wrapper.ae_awb_result_prev.wb_offsets[i];
-    }
-
 
     // Copying ti_2a_wrapper other
     dest->handle.ti_2a_wrapper.frame_count        = src_handle->ti_2a_wrapper.frame_count;
@@ -152,11 +124,26 @@ void copy_to_log_message(log_aewb_message_t *dest, AewbHandle *src_handle, tivx_
     dest->h3a_data.aew_config.aewwin1_WINHC     = src_h3a_data->aew_config.aewwin1_WINHC;
     dest->h3a_data.aew_config.aewsubwin_AEWINCV = src_h3a_data->aew_config.aewsubwin_AEWINCV;
     dest->h3a_data.aew_config.aewsubwin_AEWINCH = src_h3a_data->aew_config.aewsubwin_AEWINCH;
+
+    // Copying ae_awb_result
+    dest->ae_awb_result.h3a_source_data    = src_ae_awb_result->h3a_source_data;
+    dest->ae_awb_result.exposure_time      = src_ae_awb_result->exposure_time;
+    dest->ae_awb_result.analog_gain        = src_ae_awb_result->analog_gain;
+    dest->ae_awb_result.ae_valid           = src_ae_awb_result->ae_valid;
+    dest->ae_awb_result.ae_converged       = src_ae_awb_result->ae_converged;
+    dest->ae_awb_result.digital_gain       = src_ae_awb_result->digital_gain;
+    dest->ae_awb_result.color_temperature  = src_ae_awb_result->color_temperature;
+    dest->ae_awb_result.awb_valid          = src_ae_awb_result->awb_valid;
+    dest->ae_awb_result.awb_converged      = src_ae_awb_result->awb_converged;     
+    for (int i = 0; i < 4; i++) {
+        dest->ae_awb_result.wb_gains[i]    = src_ae_awb_result->wb_gains[i];
+        dest->ae_awb_result.wb_offsets[i]  = src_ae_awb_result->wb_offsets[i];
+    }
 }
 
-int32_t aewb_logger_write_log_to_buffer(AewbHandle *handle, tivx_h3a_data_t *h3a_ptr, log_aewb_message_t *dest_buffer)
+int32_t aewb_logger_write_log_to_buffer(AewbHandle *handle, tivx_h3a_data_t *h3a_ptr, tivx_ae_awb_params_t *ae_awb_result, log_aewb_message_t *dest_buffer)
 {
-    copy_to_log_message(dest_buffer, handle, h3a_ptr);
+    copy_to_log_message(dest_buffer, handle, h3a_ptr, ae_awb_result);
     return sizeof(log_AewbHandle);
 }
 
@@ -174,7 +161,7 @@ int32_t aewb_logger_send_bytes(aewb_logger_sender_state_t *p_state)
     return num_bytes_written;
 }
 
-int32_t aewb_logger_send_log(aewb_logger_sender_state_t *p_state, AewbHandle *handle, tivx_h3a_data_t *h3a_ptr)
+int32_t aewb_logger_send_log(aewb_logger_sender_state_t *p_state, AewbHandle *handle, tivx_h3a_data_t *h3a_ptr, tivx_ae_awb_params_t *ae_awb_result)
 {
     if (p_state==NULL)
         return 0;
@@ -183,7 +170,7 @@ int32_t aewb_logger_send_log(aewb_logger_sender_state_t *p_state, AewbHandle *ha
 
     clock_gettime(CLOCK_REALTIME, &p_state->buffer.header.timestamp);
 
-    aewb_logger_write_log_to_buffer(handle, h3a_ptr, &p_state->buffer);
+    aewb_logger_write_log_to_buffer(handle, h3a_ptr, ae_awb_result, &p_state->buffer);
 
     return aewb_logger_send_bytes(p_state);
 }

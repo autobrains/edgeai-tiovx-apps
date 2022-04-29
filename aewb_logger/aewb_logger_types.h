@@ -143,7 +143,7 @@ typedef struct
     // uint8_t * scratch_memory;
 
     /* Pointer to previous AEWB result */
-    log_tivx_ae_awb_params_t ae_awb_result_prev;
+    // log_tivx_ae_awb_params_t ae_awb_result_prev;
 
     /* Index of frame being currently processed */
     uint32_t  frame_count;
@@ -277,6 +277,7 @@ typedef struct {
 typedef struct {
     log_aewb_header_t header;
     log_AewbHandle handle;
+    log_tivx_ae_awb_params_t ae_awb_result;
     log_tivx_h3a_data_t h3a_data;
 } log_aewb_message_t;
 

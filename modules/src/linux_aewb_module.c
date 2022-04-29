@@ -858,12 +858,12 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
         TIOVX_MODULE_ERROR("[AEWB] Process call failed: %d", status);
     }
 
+    aewb_logger_send_log(handle->aewb_logger_sender_state_ptr, handle, h3a_ptr, aewb_ptr);
+
     vxUnmapUserDataObject ((vx_user_data_object)h3a_buf->handle, h3a_buf_map_id);
     vxUnmapUserDataObject ((vx_user_data_object)aewb_buf->handle, aewb_buf_map_id);
 
     status = aewb_write_to_sensor(handle);
-
-    aewb_logger_send_log(handle->aewb_logger_sender_state_ptr, handle, h3a_ptr);
 
     return status;
 }

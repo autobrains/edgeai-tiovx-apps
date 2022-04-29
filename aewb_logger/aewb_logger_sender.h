@@ -25,9 +25,9 @@ typedef struct _aewb_logger_sender_state_t aewb_logger_sender_state_t;
 
 aewb_logger_sender_state_t *aewb_logger_create_sender(const char *dest_ip, in_port_t port);
 void aewb_logger_destroy_sender(aewb_logger_sender_state_t *p_state);
-int32_t aewb_logger_write_log_to_buffer(AewbHandle *handle, tivx_h3a_data_t *h3a_ptr, log_aewb_message_t * dest_buffer);
+int32_t aewb_logger_write_log_to_buffer(AewbHandle *handle, tivx_h3a_data_t *h3a_ptr, tivx_ae_awb_params_t *ae_awb_result, log_aewb_message_t * dest_buffer);
 int32_t aewb_logger_send_bytes(aewb_logger_sender_state_t *p_state);
-int32_t aewb_logger_send_log(aewb_logger_sender_state_t *p_state, AewbHandle *handle, tivx_h3a_data_t *h3a_ptr);
+int32_t aewb_logger_send_log(aewb_logger_sender_state_t *p_state, AewbHandle *handle, tivx_h3a_data_t *h3a_ptr, tivx_ae_awb_params_t *ae_awb_result);
 
 
 #ifdef __cplusplus
