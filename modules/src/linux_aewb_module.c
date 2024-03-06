@@ -72,6 +72,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <linux/videodev2.h>
+#include<fcntl.h>
 
 #define AEWB_DEFAULT_DEVICE "/dev/v4l-rpi-subdev0"
 #define AEWB_DEFAULT_2A_FILE "/opt/imaging/imx219/linear/dcc_2a.bin"
@@ -579,6 +580,160 @@ static const uint32_t gIMX728GainsTable[ISS_IMX728_GAIN_TBL_SIZE][2U] =
   {128914, 0x1A4}
 };
 
+const char *manual_control_pipe = "./aewb_manual_control";
+int manual_control_fd = -1;
+int manual_control_again = 0;
+int manual_control_dgain = 0;
+int manual_control_exposure = 0;
+int manual_control_enabled = 0;
+int manual_control_printval = 0;
+
+void manual_control_init()
+{
+    int fd = -1;
+
+    if (manual_control_fd >= 0) {
+        return;
+    }
+
+    mkfifo(manual_control_pipe, 0666);
+    fd = open(manual_control_pipe, O_CREAT | O_RDWR);
+
+
+    if (fd < 0) {
+        TIOVX_MODULE_ERROR("[AEWB manual] Failed to create the Interface pipe\n");
+    }
+
+    if (fcntl(fd, F_SETFL, O_NONBLOCK)) {
+        TIOVX_MODULE_ERROR("[AEWB manual] Failed to set NONBLOCK option to the pipe\n");
+    }
+
+    manual_control_fd = fd;
+}
+
+void manual_control_deinit()
+{
+    if(manual_control_fd < 0) {
+        return;
+    }
+
+    close(manual_control_fd);
+    unlink(manual_control_pipe);
+}
+
+void manual_control_process()
+{
+    char strbuf[128];
+    char *token = NULL;
+    int command_set = 0;
+    int command_get = 0;
+
+    if (read(manual_control_fd, strbuf, 128) <= 0) {
+        return;
+    }
+
+    if (!(token = strtok(strbuf, " "))) {
+        TIOVX_MODULE_ERROR("[AEWB manual] Unknown command format: %s\n", strbuf);
+        return;
+    }
+
+    if (strstr(token, "set") != NULL) {
+        if (!(token = strtok(NULL, " "))) {
+            return;
+        }
+
+        command_set = 1;
+    } else if (strstr(token, "get") != NULL) {
+
+        if (!(token = strtok(NULL, " "))) {
+            return;
+        }
+
+        command_get = 1;
+    } else {
+        TIOVX_MODULE_ERROR("[AEWB manual] Unknown command: %s\n", token);
+        return;
+    }
+
+    if (strstr(token, "exposure") != NULL) {
+        if (command_set && manual_control_enabled) {
+            if (!(token = strtok(NULL, " "))) {
+                return;
+            }
+            manual_control_exposure = atoi(token);
+            TIOVX_MODULE_ERROR("[AEWB manual] Set Exposure Time with value: %d\n", manual_control_exposure);
+        } else if (command_get) {
+            TIOVX_MODULE_ERROR("[AEWB manual] Get Exposure Time value: %d\n", manual_control_exposure);
+        }
+    } else if (strstr(token, "again") != NULL) {
+        if (command_set && manual_control_enabled) {
+            if (!(token = strtok(NULL, " "))) {
+                return;
+            }
+            manual_control_again = atoi(token);
+            TIOVX_MODULE_ERROR("[AEWB manual] Set Analog Gain with value: %d\n", manual_control_again);
+        } else if (command_get) {
+            TIOVX_MODULE_ERROR("[AEWB manual] Get Analog Gain value: %d\n", manual_control_again);
+        }
+    } else if (strstr(token, "dgain") != NULL) {
+        if (command_set && manual_control_enabled) {
+            if (!(token = strtok(NULL, " "))) {
+                return;
+            }
+            manual_control_dgain = atoi(token);
+            TIOVX_MODULE_ERROR("[AEWB manual] Set Digital Gain with value: %d\n", manual_control_dgain);
+        } else if (command_get) {
+            TIOVX_MODULE_ERROR("[AEWB manual] Get Digital Gain value: %d\n", manual_control_dgain);
+        }
+    } else if (strstr(token, "manual") != NULL) {
+        if (command_set) {
+            if (!(token = strtok(NULL, " "))) {
+                return;
+            }
+            manual_control_enabled = atoi(token);
+            TIOVX_MODULE_ERROR("[AEWB manual] Set aewb manual control state with value: %d\n", manual_control_enabled);
+        } else if (command_get) {
+            TIOVX_MODULE_ERROR("[AEWB manual] Get aewb manual control state: %d\n", manual_control_enabled);
+        }
+    } else if (strstr(token, "printval") != NULL) {
+        if (command_set) {
+            if (!(token = strtok(NULL, " "))) {
+                return;
+            }
+            manual_control_printval = atoi(token);
+            TIOVX_MODULE_ERROR("[AEWB manual] Set Contiguous Param Printing state with value: %d\n", manual_control_printval);
+        } else if (command_get) {
+            TIOVX_MODULE_ERROR("[AEWB manual] Get Contiguous Param Printing state: %d\n", manual_control_printval);
+        }
+    } else {
+        TIOVX_MODULE_ERROR("[AEWB manual] Unknown parameter: %s\n", token);
+        return;
+    }
+}
+
+int aewb_write_to_sensor_manual(int fd)
+{
+    int ret = -1;
+    struct v4l2_control control;
+
+    control.id = V4L2_CID_EXPOSURE;
+    control.value = manual_control_exposure;
+    ret = ioctl (fd, VIDIOC_S_CTRL, &control);
+    if (ret < 0) {
+        TIOVX_MODULE_ERROR("[AEWB manual] Unable to call exposure ioctl: %d", ret);
+        return ret;
+    }
+
+    control.id = V4L2_CID_ANALOGUE_GAIN;
+    control.value = manual_control_again;
+    ret = ioctl (fd, VIDIOC_S_CTRL, &control);
+    if (ret < 0) {
+        TIOVX_MODULE_ERROR("[AEWB manual] Unable to call analog gain ioctl: %d", ret);
+    }
+
+    return ret;
+}
+
 
 void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
 {
@@ -803,6 +958,8 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg)
       get_imx219_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     }
 
+    manual_control_init();
+
     return handle;
 
 free_2a_file:
@@ -825,6 +982,11 @@ int aewb_write_to_sensor(AewbHandle *handle)
             handle->sensor_out_data.aePrms.exposureTime[0],
             handle->sensor_out_data.aePrms.analogGain[0],
             &coarse_integration_time, &analog_gain);
+
+    // To smooth the switching between 2A and the manual control
+    manual_control_exposure = coarse_integration_time;
+    manual_control_again = analog_gain;
+    manual_control_dgain = analog_gain;
 
     control.id = V4L2_CID_EXPOSURE;
     control.value = coarse_integration_time;
@@ -853,6 +1015,15 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
     vx_map_id aewb_buf_map_id;
     tivx_h3a_data_t *h3a_ptr = NULL;
     tivx_ae_awb_params_t *aewb_ptr = NULL;
+
+    manual_control_process();
+    if (manual_control_printval) {
+        TIOVX_MODULE_ERROR("[AEWB manual] Printval. Exposure: %d, AGain: %d, DGain: %d\n", manual_control_exposure, manual_control_again, manual_control_dgain);
+    }
+    if (manual_control_enabled) {
+        aewb_write_to_sensor_manual(handle->fd);
+        return VX_SUCCESS;
+    }
 
     vxMapUserDataObject ((vx_user_data_object)h3a_buf->handle, 0,
             sizeof (tivx_h3a_data_t), &h3a_buf_map_id, (void **) &h3a_ptr,
