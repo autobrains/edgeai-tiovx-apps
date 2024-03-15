@@ -580,13 +580,32 @@ static const uint32_t gIMX728GainsTable[ISS_IMX728_GAIN_TBL_SIZE][2U] =
   {128914, 0x1A4}
 };
 
+typedef struct {
+    int targetBrightnessRangeMin;
+    int targetBrightnessRangeMax;
+    int targetBrightness;
+    int threshold;
+    int enableBlc;
+    int exposureTimeStepSize;
+    int exposureTimeRangeMin;
+    int exposureTimeRangeMax;
+    int analogGainRangeMin;
+    int analogGainRangeMax;
+    int digitalGainRangeMin;
+    int digitalGainRangeMax;
+} manual_control_params_t;
+
+#define manual_control_apply_config(aewb_input, config_input) (aewb_input = config_input != -1 ? config_input : aewb_input)
+
 const char *manual_control_pipe = "./aewb_manual_control";
+const char *manual_control_config = "./aewb_manual_control_config.json";
 int manual_control_fd = -1;
 int manual_control_again = 0;
 int manual_control_dgain = 0;
 int manual_control_exposure = 0;
 int manual_control_enabled = 0;
 int manual_control_printval = 0;
+manual_control_params_t manual_control_params;
 
 void manual_control_init()
 {
@@ -609,6 +628,20 @@ void manual_control_init()
     }
 
     manual_control_fd = fd;
+
+    // Reset the params
+    manual_control_params.targetBrightnessRangeMin = -1;
+    manual_control_params.targetBrightnessRangeMax = -1;
+    manual_control_params.targetBrightness = -1;
+    manual_control_params.threshold = -1;
+    manual_control_params.enableBlc = -1;
+    manual_control_params.exposureTimeStepSize = -1;
+    manual_control_params.exposureTimeRangeMin = -1;
+    manual_control_params.exposureTimeRangeMax = -1;
+    manual_control_params.analogGainRangeMin = -1;
+    manual_control_params.analogGainRangeMax = -1;
+    manual_control_params.digitalGainRangeMin = -1;
+    manual_control_params.digitalGainRangeMax = -1;
 }
 
 void manual_control_deinit()
@@ -619,6 +652,24 @@ void manual_control_deinit()
 
     close(manual_control_fd);
     unlink(manual_control_pipe);
+}
+
+int manual_control_try_parse_command(int set, int get, char *token, char *param, char *description, int *var, int use_with_auto)
+{
+    if (strstr(token, param) != NULL) {
+        if (set && (manual_control_enabled || use_with_auto)) {
+            if (!(token = strtok(NULL, " "))) {
+                return 1;
+            }
+            *var = atoi(token);
+            TIOVX_MODULE_ERROR("[AEWB manual] Set %s with value: %d\n", description, *var);
+        } else if (get) {
+            TIOVX_MODULE_ERROR("[AEWB manual] Get %s value: %d\n", description, *var);
+        }
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 void manual_control_process()
@@ -655,60 +706,76 @@ void manual_control_process()
         return;
     }
 
-    if (strstr(token, "exposure") != NULL) {
-        if (command_set && manual_control_enabled) {
-            if (!(token = strtok(NULL, " "))) {
-                return;
-            }
-            manual_control_exposure = atoi(token);
-            TIOVX_MODULE_ERROR("[AEWB manual] Set Exposure Time with value: %d\n", manual_control_exposure);
-        } else if (command_get) {
-            TIOVX_MODULE_ERROR("[AEWB manual] Get Exposure Time value: %d\n", manual_control_exposure);
-        }
-    } else if (strstr(token, "again") != NULL) {
-        if (command_set && manual_control_enabled) {
-            if (!(token = strtok(NULL, " "))) {
-                return;
-            }
-            manual_control_again = atoi(token);
-            TIOVX_MODULE_ERROR("[AEWB manual] Set Analog Gain with value: %d\n", manual_control_again);
-        } else if (command_get) {
-            TIOVX_MODULE_ERROR("[AEWB manual] Get Analog Gain value: %d\n", manual_control_again);
-        }
-    } else if (strstr(token, "dgain") != NULL) {
-        if (command_set && manual_control_enabled) {
-            if (!(token = strtok(NULL, " "))) {
-                return;
-            }
-            manual_control_dgain = atoi(token);
-            TIOVX_MODULE_ERROR("[AEWB manual] Set Digital Gain with value: %d\n", manual_control_dgain);
-        } else if (command_get) {
-            TIOVX_MODULE_ERROR("[AEWB manual] Get Digital Gain value: %d\n", manual_control_dgain);
-        }
-    } else if (strstr(token, "manual") != NULL) {
-        if (command_set) {
-            if (!(token = strtok(NULL, " "))) {
-                return;
-            }
-            manual_control_enabled = atoi(token);
-            TIOVX_MODULE_ERROR("[AEWB manual] Set aewb manual control state with value: %d\n", manual_control_enabled);
-        } else if (command_get) {
-            TIOVX_MODULE_ERROR("[AEWB manual] Get aewb manual control state: %d\n", manual_control_enabled);
-        }
-    } else if (strstr(token, "printval") != NULL) {
-        if (command_set) {
-            if (!(token = strtok(NULL, " "))) {
-                return;
-            }
-            manual_control_printval = atoi(token);
-            TIOVX_MODULE_ERROR("[AEWB manual] Set Contiguous Param Printing state with value: %d\n", manual_control_printval);
-        } else if (command_get) {
-            TIOVX_MODULE_ERROR("[AEWB manual] Get Contiguous Param Printing state: %d\n", manual_control_printval);
-        }
-    } else {
-        TIOVX_MODULE_ERROR("[AEWB manual] Unknown parameter: %s\n", token);
-        return;
+    if (manual_control_try_parse_command(command_set, command_get, token, "exposure", "Exposure Time", &manual_control_exposure, false)) return;
+    if (manual_control_try_parse_command(command_set, command_get, token, "again", "Analog Gain", &manual_control_again, false)) return;
+    if (manual_control_try_parse_command(command_set, command_get, token, "dgain", "Digital Gain", &manual_control_dgain, false)) return;
+    if (manual_control_try_parse_command(command_set, command_get, token, "manual", "AEWB Manual Control", &manual_control_enabled, true)) return;
+    if (manual_control_try_parse_command(command_set, command_get, token, "printval", "Contiguous Params Printing", &manual_control_printval, true)) return;
+
+    // You shouldn't reach this place
+    TIOVX_MODULE_ERROR("[AEWB manual] Unknown parameter: %s\n", token);
+}
+
+int manual_control_parse_param(char * str, const char *param, int *var) {
+  char *delim = NULL;
+  
+  if (*var == -1 && strstr(str, param)) {
+    if (!(delim = strchr(str, ':'))) {
+        return 0;
     }
+    *var = atoi(delim + 1);
+    TIOVX_MODULE_ERROR("[AEWB manual] Apply \"%s\" from the config file with value: %d\n", param, *var);
+    return 1;
+  }
+
+  return 0;
+}
+
+int manual_control_load_config_from_file()
+{
+    char *line = NULL;
+    size_t len = 0;
+    int start_parse = 0;
+    FILE *file = NULL;
+    int ret = 0;
+
+    if (access(manual_control_config, R_OK) != 0) {
+        // The config file doesn't exist
+        return ret;
+    }
+
+    file = fopen(manual_control_config, "r");
+    if (file == NULL) {
+        TIOVX_MODULE_ERROR("[AEWB manual] Failed to open the config file with errno %d", errno);
+    }
+
+    while (getline(&line, &len, file) != -1) {
+        if (strstr(line, "{")) {
+            start_parse = 1;
+            continue;
+        } else if (strstr(line, "}")) {
+            ret = 1;
+            break;
+        }
+
+        if (start_parse) {
+            if (manual_control_parse_param(line, "targetBrightnessRangeMin", &manual_control_params.targetBrightnessRangeMin)) continue;
+            if (manual_control_parse_param(line, "targetBrightnessRangeMax", &manual_control_params.targetBrightnessRangeMax)) continue;
+            if (manual_control_parse_param(line, "targetBrightness", &manual_control_params.targetBrightness)) continue;
+            if (manual_control_parse_param(line, "threshold", &manual_control_params.threshold)) continue;
+            if (manual_control_parse_param(line, "enableBlc", &manual_control_params.enableBlc)) continue;
+            if (manual_control_parse_param(line, "exposureTimeStepSize", &manual_control_params.exposureTimeStepSize)) continue;
+            if (manual_control_parse_param(line, "exposureTimeRangeMin", &manual_control_params.exposureTimeRangeMin)) continue;
+            if (manual_control_parse_param(line, "exposureTimeRangeMax", &manual_control_params.exposureTimeRangeMax)) continue;
+            if (manual_control_parse_param(line, "analogGainRangeMin", &manual_control_params.analogGainRangeMin)) continue;
+            if (manual_control_parse_param(line, "analogGainRangeMax", &manual_control_params.analogGainRangeMax)) continue;
+            if (manual_control_parse_param(line, "digitalGainRangeMin", &manual_control_params.digitalGainRangeMin)) continue;
+            if (manual_control_parse_param(line, "digitalGainRangeMax", &manual_control_params.digitalGainRangeMax)) continue;
+        }
+    }
+
+    fclose(file);
+    return ret;
 }
 
 int aewb_write_to_sensor_manual(int fd)
@@ -752,6 +819,36 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
     p_ae_dynPrms->analogGainRange[count].max = 128914;
     p_ae_dynPrms->digitalGainRange[count].min = 256;
     p_ae_dynPrms->digitalGainRange[count].max = 256;
+
+    if (manual_control_load_config_from_file()) {
+        // Load the params from the config file if possible
+        manual_control_apply_config(p_ae_dynPrms->targetBrightnessRange.min, manual_control_params.targetBrightnessRangeMin);
+        manual_control_apply_config(p_ae_dynPrms->targetBrightnessRange.max, manual_control_params.targetBrightnessRangeMax);
+        manual_control_apply_config(p_ae_dynPrms->targetBrightness, manual_control_params.targetBrightness);
+        manual_control_apply_config(p_ae_dynPrms->threshold, manual_control_params.threshold);
+        manual_control_apply_config(p_ae_dynPrms->enableBlc, manual_control_params.enableBlc);
+        manual_control_apply_config(p_ae_dynPrms->exposureTimeStepSize, manual_control_params.exposureTimeStepSize);
+        manual_control_apply_config(p_ae_dynPrms->exposureTimeRange[count].min, manual_control_params.exposureTimeRangeMin);
+        manual_control_apply_config(p_ae_dynPrms->exposureTimeRange[count].max, manual_control_params.exposureTimeRangeMax);
+        manual_control_apply_config(p_ae_dynPrms->analogGainRange[count].min, manual_control_params.analogGainRangeMin);
+        manual_control_apply_config(p_ae_dynPrms->analogGainRange[count].max, manual_control_params.analogGainRangeMax);
+        manual_control_apply_config(p_ae_dynPrms->digitalGainRange[count].min, manual_control_params.digitalGainRangeMin);
+        manual_control_apply_config(p_ae_dynPrms->digitalGainRange[count].max, manual_control_params.digitalGainRangeMax);
+
+        TIOVX_MODULE_ERROR("[AEWB manual] Loading parameters from the config file. Final parameters are:\n");
+        TIOVX_MODULE_ERROR("[AEWB manual]   targetBrightnessRange.min = %d\n", p_ae_dynPrms->targetBrightnessRange.min);
+        TIOVX_MODULE_ERROR("[AEWB manual]   targetBrightnessRange.max = %d\n", p_ae_dynPrms->targetBrightnessRange.max);
+        TIOVX_MODULE_ERROR("[AEWB manual]   targetBrightness = %d\n", p_ae_dynPrms->targetBrightness);
+        TIOVX_MODULE_ERROR("[AEWB manual]   threshold = %d\n", p_ae_dynPrms->threshold);
+        TIOVX_MODULE_ERROR("[AEWB manual]   enableBlc = %d\n", p_ae_dynPrms->enableBlc);
+        TIOVX_MODULE_ERROR("[AEWB manual]   exposureTimeStepSize = %d\n", p_ae_dynPrms->exposureTimeStepSize);
+        TIOVX_MODULE_ERROR("[AEWB manual]   exposureTimeRange[count].min = %d\n", p_ae_dynPrms->exposureTimeRange[count].min);
+        TIOVX_MODULE_ERROR("[AEWB manual]   exposureTimeRange[count].max = %d\n", p_ae_dynPrms->exposureTimeRange[count].max);
+        TIOVX_MODULE_ERROR("[AEWB manual]   analogGainRange[count].min = %d\n", p_ae_dynPrms->analogGainRange[count].min);
+        TIOVX_MODULE_ERROR("[AEWB manual]   analogGainRange[count].max = %d\n", p_ae_dynPrms->analogGainRange[count].max);
+        TIOVX_MODULE_ERROR("[AEWB manual]   digitalGainRange[count].min = %d\n", p_ae_dynPrms->digitalGainRange[count].min);
+        TIOVX_MODULE_ERROR("[AEWB manual]   digitalGainRange[count].max = %d\n", p_ae_dynPrms->digitalGainRange[count].max);
+    }
     count++;
 
     p_ae_dynPrms->numAeDynParams = count;
@@ -948,6 +1045,9 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg)
         goto free_2a_file;
     }
 
+    // Should be before the params get call
+    manual_control_init();
+
     if (strcmp(cfg->sensor_name, "SENSOR_SONY_IMX390_UB953_D3") == 0) {
       get_imx390_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     } else if (strcmp(cfg->sensor_name, "SENSOR_OV2312_UB953_LI") == 0) {
@@ -957,8 +1057,6 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg)
     } else {
       get_imx219_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     }
-
-    manual_control_init();
 
     return handle;
 
