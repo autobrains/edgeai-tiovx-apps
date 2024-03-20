@@ -104,6 +104,7 @@ NodeObj* tiovx_modules_add_node(GraphObj *graph, NODE_TYPES node_type, void *cfg
     node->node_index = graph->num_nodes;
     node->cbs = &gNodeCbs[node_type];
     node->node_cfg = malloc(node->cbs->get_cfg_size());
+    node->node_type = node_type;
 
     if (node->cbs->get_priv_size) {
         node->node_priv = malloc(node->cbs->get_priv_size());
@@ -147,9 +148,13 @@ Buf* tiovx_modules_acquire_buf(BufPool *buf_pool)
 
     LOCK(buf_pool);
 
+    if (!buf_pool->free_count) {
+        TIOVX_MODULE_ERROR("No free buffer\n");
+        return NULL;
+    }
+
     buf_pool->free_count--;
     buf = buf_pool->freeQ[buf_pool->free_count];
-    buf->acquired = vx_true_e;
 
     UNLOCK(buf_pool);
 
@@ -162,7 +167,6 @@ vx_status tiovx_modules_release_buf(Buf *buf)
 
     LOCK(buf->pool);
 
-    buf->acquired = vx_false_e;
     buf->pool->freeQ[buf->pool->free_count] = buf;
     buf->pool->free_count++;
 
@@ -233,8 +237,6 @@ BufPool* tiovx_modules_allocate_bufpool(Pad *pad)
                                                         0);
         buf_pool->bufs[i].pool = buf_pool;
         buf_pool->bufs[i].buf_index = i;
-        buf_pool->bufs[i].acquired = vx_true_e;
-        buf_pool->bufs[i].queued = vx_false_e;
         buf_pool->bufs[i].num_channels = pad->num_channels;
         buf_pool->ref_list[i] = (vx_reference)buf_pool->bufs[i].arr;
 
@@ -482,6 +484,7 @@ vx_bool tiovx_modules_compare_exemplars(vx_reference exemplar1, vx_reference exe
     vx_status status = VX_FAILURE;
     vx_bool ret = vx_false_e;
     vx_enum type1, type2;
+    vx_size size1, size2;
 
     status = vxQueryReference(exemplar1, VX_REFERENCE_TYPE,
                               (void *)&type1, sizeof(type1));
@@ -516,8 +519,6 @@ vx_bool tiovx_modules_compare_exemplars(vx_reference exemplar1, vx_reference exe
                                                    (tivx_raw_image)exemplar2);
             break;
         case VX_TYPE_USER_DATA_OBJECT:
-            vx_size size1, size2;
-
             status = vxQueryUserDataObject ((vx_user_data_object)exemplar1,
                                             VX_USER_DATA_OBJECT_SIZE,
                                             (void *)&size1, sizeof(size1));
@@ -646,7 +647,7 @@ void tiovx_modules_modify_node_names(GraphObj *graph)
 
     for (uint8_t i = 0; i < graph->num_nodes; i++) {
         uint8_t node_count = 0;
-        vx_char i_node_name[VX_MAX_REFERENCE_NAME];
+        vx_char i_node_name[VX_MAX_REFERENCE_NAME - 3];
 
         if(vx_true_e == modified[i]) {
             continue;
@@ -655,11 +656,11 @@ void tiovx_modules_modify_node_names(GraphObj *graph)
         sprintf(i_node_name, graph->node_list[i].name);
 
         for(uint8_t j = i+1; j < graph->num_nodes; j++) {
-            vx_char j_node_name[VX_MAX_REFERENCE_NAME];
+            vx_char j_node_name[VX_MAX_REFERENCE_NAME - 3];
             sprintf(j_node_name, graph->node_list[j].name);
             if(0 == strcmp(i_node_name, j_node_name)) {
                 sprintf(graph->node_list[j].name,
-                        "%s_%d",
+                        "%s_%02d",
                         j_node_name,
                         ++node_count);
                 modified[j] = vx_true_e;
@@ -667,7 +668,7 @@ void tiovx_modules_modify_node_names(GraphObj *graph)
         }
 
         if(node_count > 0) {
-            sprintf(graph->node_list[i].name, "%s_0", i_node_name);
+            sprintf(graph->node_list[i].name, "%s_00", i_node_name);
         }
 
         modified[i] = vx_true_e;
@@ -766,7 +767,8 @@ void tiovx_modules_print_performance(GraphObj *graph)
     for (uint8_t i = 0; i < graph->num_nodes; i++) {
         vx_perf_t perf;
 
-        if(0 == strncmp("tee", graph->node_list[i].name, 3)) {
+        if((graph->node_list[i].node_type == TIOVX_TEE) ||
+           (graph->node_list[i].node_type == TIOVX_DELAY)) {
             continue;
         }
 
@@ -796,9 +798,15 @@ vx_status tiovx_modules_enqueue_buf(Buf *buf)
 
     LOCK(buf->pool);
 
+    if (buf_pool->enqueue_tail ==
+                    (buf_pool->enqueue_head + 1) % (buf_pool->bufq_depth + 1)) {
+        TIOVX_MODULE_ERROR("Queue Full\n");
+        return status;
+    }
+
     buf_pool->enqueuedQ[buf_pool->enqueue_head] = buf;
-    buf_pool->enqueue_head++;
-    buf->queued = vx_true_e;
+    buf_pool->enqueue_head = (buf_pool->enqueue_head + 1) %
+                                                    (buf_pool->bufq_depth + 1);
 
     UNLOCK(buf->pool);
 
@@ -820,9 +828,14 @@ Buf* tiovx_modules_dequeue_buf(BufPool *buf_pool)
 
     LOCK(buf_pool);
 
+    if (buf_pool->enqueue_tail == buf_pool->enqueue_head) {
+        TIOVX_MODULE_ERROR("Queue Empty\n");
+        return NULL;
+    }
+
     Buf *buf = buf_pool->enqueuedQ[buf_pool->enqueue_tail];
-    buf_pool->enqueue_head--;
-    buf->queued = vx_false_e;
+    buf_pool->enqueue_tail = (buf_pool->enqueue_tail + 1) %
+                                                    (buf_pool->bufq_depth + 1);
 
     UNLOCK(buf_pool);
 

@@ -129,12 +129,6 @@ struct _Buf {
     /*! \brief Index of the buffer with respect to all the buffers in the pool */
     vx_int32            buf_index;
 
-    /*! \brief Set to TRUE if buffer is aquired*/
-    vx_bool             acquired;
-
-    /*! \brief Set to TRUE if buffer is queued to graph*/
-    vx_bool             queued;
-
     /*! \brief Object array for the buffer */
     vx_object_array     arr;
 
@@ -235,6 +229,9 @@ typedef struct {
 struct _NodeObj {
     /*! \brief Name of the node */
     vx_char             name[VX_MAX_REFERENCE_NAME];
+
+    /*! \brief Name type \ref NODE_TYPES */
+    vx_int32            node_type;
 
     /*! \brief Pointer to the parent Graph \ref _GraphObj */
     GraphObj            *graph;

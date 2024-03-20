@@ -204,7 +204,7 @@ int32_t create_output_block(GraphObj *graph, OutputBlock *output_block)
         output_pad = &mosaic_node->srcs[0];
     }
 
-#if !defined(SOC_AM62A)
+#if !defined(SOC_AM62A) && !defined(SOC_J722S)
     /* RTOS_DISPLAY */
     if(output_info->sink == RTOS_DISPLAY)
     {
@@ -231,6 +231,7 @@ int32_t create_output_block(GraphObj *graph, OutputBlock *output_block)
     }
 #endif
 
+#if defined(TARGET_OS_LINUX)
     if(output_info->sink == LINUX_DISPLAY)
     {
         kmsDisplayCfg kms_display_cfg;
@@ -265,6 +266,7 @@ int32_t create_output_block(GraphObj *graph, OutputBlock *output_block)
         output_block->v4l2_obj.v4l2_encode_handle = v4l2_encode_create_handle(&v4l2_encode_cfg);
 
     }
+#endif
 
     output_block->output_pad = output_pad;
 
