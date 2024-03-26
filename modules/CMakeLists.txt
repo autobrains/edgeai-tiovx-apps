@@ -46,7 +46,7 @@ if ("${TARGET_SOC}" STREQUAL "J721E" OR "${TARGET_SOC}" STREQUAL "J721S2" OR "${
 endif()
 
 build_lib(${PROJECT_NAME}  # Named argument: library name
-          SHARED           # Named argument: library type
+          STATIC           # Named argument: library type
           0.1.0            # Named argument: library version
           # The following all will be clubbed under ${ARGN}
           ${SRC_FILES})
