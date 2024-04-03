@@ -586,14 +586,14 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
 
     p_ae_dynPrms->targetBrightnessRange.min = 40;
     p_ae_dynPrms->targetBrightnessRange.max = 50;
-    p_ae_dynPrms->targetBrightness = 45;
+    p_ae_dynPrms->targetBrightness = 35;
     p_ae_dynPrms->threshold = 5;
     p_ae_dynPrms->enableBlc = 0;
     
     p_ae_dynPrms->exposureTimeStepSize         = 1000;  // usec
     p_ae_dynPrms->exposureTimeRange[count].min = 8000;
     p_ae_dynPrms->exposureTimeRange[count].max = 20000;
-    p_ae_dynPrms->analogGainRange[count].min = 64610;
+    p_ae_dynPrms->analogGainRange[count].min = 5192;
     p_ae_dynPrms->analogGainRange[count].max = 128914;
     p_ae_dynPrms->digitalGainRange[count].min = 256;
     p_ae_dynPrms->digitalGainRange[count].max = 256;
