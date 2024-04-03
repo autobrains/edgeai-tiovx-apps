@@ -69,35 +69,39 @@
 #define LDC_BLOCK_HEIGHT    (32)
 #define LDC_PIXEL_PAD       (1)
 
-#if defined(SOC_J84S4)
+#if defined(SOC_J784S4)
 static char *g_capture_targets[] = {TIVX_TARGET_CAPTURE1, TIVX_TARGET_CAPTURE2,
                                     TIVX_TARGET_CAPTURE3, TIVX_TARGET_CAPTURE4,
                                     TIVX_TARGET_CAPTURE5, TIVX_TARGET_CAPTURE6,
                                     TIVX_TARGET_CAPTURE7, TIVX_TARGET_CAPTURE8,
                                     TIVX_TARGET_CAPTURE9, TIVX_TARGET_CAPTURE10,
                                     TIVX_TARGET_CAPTURE11, TIVX_TARGET_CAPTURE12};
+static uint8_t g_capture_target_idx = 0;
 
 static char *g_viss_targets[] = {TIVX_TARGET_VPAC_VISS1, TIVX_TARGET_VPAC2_VISS1};
+static uint8_t g_viss_target_idx = 0;
 
 static char *g_ldc_targets[] = {TIVX_TARGET_VPAC_LDC1, TIVX_TARGET_VPAC2_LDC1};
+static uint8_t g_ldc_target_idx = 0;
+
 #else
+
 #if defined(SOC_J721E) || defined(SOC_J721S2)
 static char *g_capture_targets[] = {TIVX_TARGET_CAPTURE1, TIVX_TARGET_CAPTURE2,
                                     TIVX_TARGET_CAPTURE3, TIVX_TARGET_CAPTURE4,
                                     TIVX_TARGET_CAPTURE5, TIVX_TARGET_CAPTURE6,
                                     TIVX_TARGET_CAPTURE7, TIVX_TARGET_CAPTURE8};
-#else
-static char *g_capture_targets[] = {TIVX_TARGET_CAPTURE1, TIVX_TARGET_CAPTURE2,
-                                    TIVX_TARGET_CAPTURE3, TIVX_TARGET_CAPTURE4};
+static uint8_t g_capture_target_idx = 0;
 #endif
+
 static char *g_viss_targets[] = {TIVX_TARGET_VPAC_VISS1};
+static uint8_t g_viss_target_idx = 0;
 
 static char *g_ldc_targets[] = {TIVX_TARGET_VPAC_LDC1};
+static uint8_t g_ldc_target_idx = 0;
+
 #endif
 
-static uint8_t g_capture_target_idx = 0;
-static uint8_t g_viss_target_idx = 0;
-static uint8_t g_ldc_target_idx = 0;
 
 void initialize_input_block(InputBlock *input_block)
 {
@@ -185,6 +189,17 @@ int32_t create_input_block(GraphObj *graph, InputBlock *input_block)
             output_width = 1920;
             output_height = 1080;
         }
+#if defined(SOC_AM62A) || defined(SOC_J722S)
+        else if (0 == strcmp("ov2312",input_info->sensor_name))
+        {
+            sprintf(sensor_name, "SENSOR_OV2312_UB953_LI");
+            format_pixel_container = TIVX_RAW_IMAGE_16_BIT;
+            format_msb = 9;
+            v4l2_pix_format = v4l2_fourcc('B','G','I','0');
+            output_width = 1600;
+            output_height = 1300;
+        }
+#endif
         else
         {
             TIOVX_APPS_ERROR("Invalid sensor name %s\n", input_info->sensor_name);
@@ -210,7 +225,6 @@ int32_t create_input_block(GraphObj *graph, InputBlock *input_block)
 
             sprintf(capture_cfg.target_string,
                     g_capture_targets[g_capture_target_idx]);
-            printf("%s\n",g_capture_targets[g_capture_target_idx]);
 
             g_capture_target_idx++;
             if(g_capture_target_idx >=
@@ -400,6 +414,13 @@ int32_t create_input_block(GraphObj *graph, InputBlock *input_block)
 
             viss_cfg.input_cfg.params.format[0].pixel_container = format_pixel_container;
             viss_cfg.input_cfg.params.format[0].msb = format_msb;
+
+#if defined(SOC_AM62A) || defined(SOC_J722S)
+            if (0 == strcmp("SENSOR_OV2312_UB953_LI",viss_cfg.sensor_name))
+            {
+                viss_cfg.viss_params.bypass_pcid = 0;
+            }
+#endif
             viss_cfg.enable_aewb_pad = vx_true_e;
             viss_cfg.enable_h3a_pad = vx_true_e;
 

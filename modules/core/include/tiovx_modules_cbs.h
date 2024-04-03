@@ -75,6 +75,7 @@
 #include "tiovx_obj_array_split_module.h"
 #include "tiovx_pyramid_module.h"
 #include "tiovx_delay_module.h"
+#include "tiovx_fakesink_module.h"
 
 #if defined(SOC_J721E) || defined(SOC_J721S2) || defined(SOC_J784S4)
 #include "tiovx_display_module.h"
@@ -107,6 +108,7 @@ typedef enum {
     TIOVX_OBJ_ARRAY_SPLIT,
     TIOVX_PYRAMID,
     TIOVX_DELAY,
+    TIOVX_FAKESINK,
 #if defined(SOC_J721E) || defined(SOC_J721S2) || defined(SOC_J784S4)
     TIOVX_DISPLAY,
     TIOVX_CAPTURE,

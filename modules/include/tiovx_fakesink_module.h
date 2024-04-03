@@ -59,98 +59,27 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#ifndef _TIOVX_FAKESINK_MODULE
+#define _TIOVX_FAKESINK_MODULE
 
-#include <tiovx_modules.h>
-#include <tiovx_utils.h>
-#include <v4l2_capture_module.h>
+#include "tiovx_modules_types.h"
 
-#define APP_BUFQ_DEPTH      (4)
-#define APP_NUM_CH          (1)
-#define APP_NUM_ITERATIONS  (5)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define INPUT_WIDTH  (1920)
-#define INPUT_HEIGHT (1080)
+typedef struct {
+    Pad         *peer_pad;
+} TIOVXFakesinkNodeCfg;
 
-#define SENSOR_NAME "SENSOR_SONY_IMX219_RPI"
-#define DCC_VISS "/opt/imaging/imx219/linear/dcc_viss.bin"
+void tiovx_fakesink_init_cfg(TIOVXFakesinkNodeCfg *cfg);
+vx_status tiovx_fakesink_init_node(NodeObj *node);
+vx_status tiovx_fakesink_create_node(NodeObj *node);
+vx_status tiovx_fakesink_delete_node(NodeObj *node);
+vx_uint32 tiovx_fakesink_get_cfg_size();
 
-vx_status app_modules_v4l2_capture_test(vx_int32 argc, vx_char* argv[])
-{
-    vx_status status = VX_FAILURE;
-    GraphObj graph;
-    NodeObj *node = NULL;
-    TIOVXVissNodeCfg cfg;
-    BufPool *in_buf_pool = NULL, *out_buf_pool = NULL;
-    Buf *inbuf = NULL, *outbuf = NULL;
-    char output_filename[100];
-    v4l2CaptureCfg v4l2_capture_cfg;
-    v4l2CaptureHandle *v4l2_capture_handle;
-
-    tiovx_viss_init_cfg(&cfg);
-
-    sprintf(cfg.sensor_name, SENSOR_NAME);
-    snprintf(cfg.dcc_config_file, TIVX_FILEIO_FILE_PATH_LENGTH, "%s", DCC_VISS);
-    cfg.width = INPUT_WIDTH;
-    cfg.height = INPUT_HEIGHT;
-    sprintf(cfg.target_string, TIVX_TARGET_VPAC_VISS1);
-
-    cfg.input_cfg.params.format[0].pixel_container = TIVX_RAW_IMAGE_8_BIT;
-    cfg.input_cfg.params.format[0].msb = 7;
-
-    status = tiovx_modules_initialize_graph(&graph);
-    node = tiovx_modules_add_node(&graph, TIOVX_VISS, (void *)&cfg);
-    node->sinks[0].bufq_depth = APP_BUFQ_DEPTH;
-    status = tiovx_modules_verify_graph(&graph);
-
-    in_buf_pool = node->sinks[0].buf_pool;
-    out_buf_pool = node->srcs[0].buf_pool;
-
-    v4l2_capture_init_cfg(&v4l2_capture_cfg);
-    v4l2_capture_cfg.width = INPUT_WIDTH;
-    v4l2_capture_cfg.height = INPUT_HEIGHT;
-    v4l2_capture_cfg.pix_format = V4L2_PIX_FMT_SRGGB8;
-    v4l2_capture_cfg.bufq_depth = APP_BUFQ_DEPTH + 1;
-    sprintf(v4l2_capture_cfg.device, "/dev/video-imx219-cam0");
-
-    v4l2_capture_handle = v4l2_capture_create_handle(&v4l2_capture_cfg);
-
-    for (int i = 0; i < APP_BUFQ_DEPTH; i++) {
-        inbuf = tiovx_modules_acquire_buf(in_buf_pool);
-        v4l2_capture_enqueue_buf(v4l2_capture_handle, inbuf);
-    }
-
-    v4l2_capture_start(v4l2_capture_handle);
-
-    for (int i = 0; i < APP_NUM_ITERATIONS; i++) {
-        do {
-            inbuf = v4l2_capture_dqueue_buf(v4l2_capture_handle);
-        } while (inbuf == NULL);
-
-        tiovx_modules_enqueue_buf(inbuf);
-
-        outbuf = tiovx_modules_acquire_buf(out_buf_pool);
-        tiovx_modules_enqueue_buf(outbuf);
-
-        tiovx_modules_schedule_graph(&graph);
-        tiovx_modules_wait_graph(&graph);
-
-        inbuf = tiovx_modules_dequeue_buf(in_buf_pool);
-        outbuf = tiovx_modules_dequeue_buf(out_buf_pool);
-
-        v4l2_capture_enqueue_buf(v4l2_capture_handle, inbuf);
-
-        sprintf(output_filename,
-                "%s/output/imx219_1920x1080_v4l2_capture_nv12_%d.yuv",
-                EDGEAI_DATA_PATH, i);
-
-        writeImage(output_filename, (vx_image)outbuf->handle);
-        tiovx_modules_release_buf(outbuf);
-    }
-
-    v4l2_capture_stop(v4l2_capture_handle);
-    v4l2_capture_delete_handle(v4l2_capture_handle);
-
-    tiovx_modules_clean_graph(&graph);
-
-    return status;
+#ifdef __cplusplus
 }
+#endif
+
+#endif

@@ -437,6 +437,7 @@ vx_status tiovx_tidl_update_checksums(NodeObj *node)
 vx_status tiovx_tidl_set_createParams(NodeObj *node)
 {
     vx_status status = VX_FAILURE;
+    TIOVXTIDLNodeCfg *node_cfg = (TIOVXTIDLNodeCfg *)node->node_cfg;
     TIOVXTIDLNodePriv *node_priv = (TIOVXTIDLNodePriv *)node->node_priv;
 
     vx_map_id  map_id;
@@ -473,6 +474,26 @@ vx_status tiovx_tidl_set_createParams(NodeObj *node)
         prms->quantRangeUpdateFactor        = 0.0;
         prms->traceLogLevel                 = 0;
         prms->traceWriteLevel               = 0;
+#if defined(SOC_J784S4)
+        if (0 == strcmp(TIVX_TARGET_DSP_C7_2, node_cfg->target_string))
+        {
+            prms->coreId = 1;
+        }
+        else if (0 == strcmp(TIVX_TARGET_DSP_C7_3, node_cfg->target_string))
+        {
+            prms->coreId = 2;
+        }
+        else if (0 == strcmp(TIVX_TARGET_DSP_C7_4, node_cfg->target_string))
+        {
+            prms->coreId = 3;
+        }
+#elif defined(SOC_J722S)
+        if (0 == strcmp(TIVX_TARGET_DSP_C7_2, node_cfg->target_string))
+        {
+            prms->coreId = 1;
+        }
+#endif
+
     }
     else
     {
@@ -627,6 +648,7 @@ void tiovx_tidl_init_cfg(TIOVXTIDLNodeCfg *node_cfg)
     node_cfg->num_input_tensors = 1;
     node_cfg->num_output_tensors = 1;
     node_cfg->num_channels = 1;
+    sprintf(node_cfg->target_string, TIVX_TARGET_DSP_C7_1);
     return;
 }
 
@@ -796,7 +818,7 @@ vx_status tiovx_tidl_create_node(NodeObj *node)
     }
 
     vxSetReferenceName((vx_reference)node->tiovx_node, "tidl_node");
-    vxSetNodeTarget(node->tiovx_node, VX_TARGET_STRING, TIVX_TARGET_DSP_C7_1);
+    vxSetNodeTarget(node->tiovx_node, VX_TARGET_STRING, node_cfg->target_string);
 
     replicate[TIVX_KERNEL_TIDL_IN_CONFIG_IDX] = vx_false_e;
     replicate[TIVX_KERNEL_TIDL_IN_NETWORK_IDX] = vx_false_e;

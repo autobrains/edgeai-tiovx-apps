@@ -240,7 +240,7 @@ vx_status app_modules_linux_capture_dof_test(vx_int32 argc, vx_char* argv[])
     v4l2_capture_cfg.height = INPUT_HEIGHT;
     v4l2_capture_cfg.pix_format = V4L2_PIX_FMT_SRGGB8;
     v4l2_capture_cfg.bufq_depth = APP_BUFQ_DEPTH;
-    sprintf(v4l2_capture_cfg.device, "/dev/video-rpi-cam0");
+    sprintf(v4l2_capture_cfg.device, "/dev/video-imx219-cam0");
 
     v4l2_capture_handle = v4l2_capture_create_handle(&v4l2_capture_cfg);
 
@@ -252,7 +252,7 @@ vx_status app_modules_linux_capture_dof_test(vx_int32 argc, vx_char* argv[])
     kms_display_handle = kms_display_create_handle(&kms_display_cfg);
 
     aewb_init_cfg(&aewb_cfg);
-    sprintf(aewb_cfg.device, "/dev/v4l-rpi-subdev0");
+    sprintf(aewb_cfg.device, "/dev/v4l-imx219-subdev0");
     sprintf(aewb_cfg.dcc_2a_file, "/opt/imaging/imx219/linear/dcc_2a.bin");
 
     aewb_handle = aewb_create_handle(&aewb_cfg);
@@ -274,7 +274,10 @@ vx_status app_modules_linux_capture_dof_test(vx_int32 argc, vx_char* argv[])
     v4l2_capture_start(v4l2_capture_handle);
 
     for (int i = 0; i < APP_NUM_ITERATIONS; i++) {
-        inbuf = v4l2_capture_dqueue_buf(v4l2_capture_handle);
+        do {
+            inbuf = v4l2_capture_dqueue_buf(v4l2_capture_handle);
+        } while (inbuf == NULL);
+
         tiovx_modules_enqueue_buf(inbuf);
 
         outbuf = tiovx_modules_acquire_buf(out_buf_pool);
