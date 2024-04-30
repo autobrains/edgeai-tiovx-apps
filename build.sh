@@ -6,4 +6,4 @@ mkdir build
 cd build
 cmake ..
 make -j2
-cp /home/root/autobrains/edgeai-tiovx-apps/lib/Release/libaewb_logger.so.0.1.0 /usr/lib/
+cp ./lib/Release/libaewb_logger.so.0.1.0 /usr/lib/
