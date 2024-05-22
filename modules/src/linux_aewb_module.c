@@ -154,6 +154,7 @@ static const uint16_t gIMX390GainsTable[ISS_IMX390_GAIN_TBL_SIZE][2U] = {
   {8192, 0x5D}
 };
 
+
 static const uint32_t gIMX728GainsTable[ISS_IMX728_GAIN_TBL_SIZE][2U] =
 {
   {1024, 0x0}, \
@@ -584,17 +585,17 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
 {
     uint8_t count = 0;
 
-    p_ae_dynPrms->targetBrightnessRange.min = 40;
+    p_ae_dynPrms->targetBrightnessRange.min = 30;
     p_ae_dynPrms->targetBrightnessRange.max = 50;
-    p_ae_dynPrms->targetBrightness = 35;
+    p_ae_dynPrms->targetBrightness = 45;
     p_ae_dynPrms->threshold = 5;
     p_ae_dynPrms->enableBlc = 0;
     
     p_ae_dynPrms->exposureTimeStepSize         = 1000;  // usec
-    p_ae_dynPrms->exposureTimeRange[count].min = 8000;
-    p_ae_dynPrms->exposureTimeRange[count].max = 20000;
-    p_ae_dynPrms->analogGainRange[count].min = 5192;
-    p_ae_dynPrms->analogGainRange[count].max = 128914;
+    p_ae_dynPrms->exposureTimeRange[count].min = 1000; 
+    p_ae_dynPrms->exposureTimeRange[count].max = 33000; 
+    p_ae_dynPrms->analogGainRange[count].min = 1*1024;
+    p_ae_dynPrms->analogGainRange[count].max = 32228*1024;
     p_ae_dynPrms->digitalGainRange[count].min = 256;
     p_ae_dynPrms->digitalGainRange[count].max = 256;
     count++;
@@ -688,15 +689,9 @@ void gst_tiovx_isp_map_2A_values (char *sensor_name, int exposure_time,
       }
       *exposure_time_mapped = exposure_time;
       *analog_gain_mapped = gIMX390GainsTable[i][1];
-  } else if (strcmp(sensor_name, "SENSOR_SONY_IMX728") == 0) {
-      int i;
-      for (i = 0; i < ISS_IMX728_GAIN_TBL_SIZE - 1; i++) {
-          if (gIMX728GainsTable[i][0] >= analog_gain) {
-              break;
-          }
-      }
+  } else if (strcmp(sensor_name, "SENSOR_SONY_IMX728") == 0) {     
+      *analog_gain_mapped = (int)((log2(analog_gain) - 10.0) * 60.0);
       *exposure_time_mapped = exposure_time;
-      *analog_gain_mapped = gIMX728GainsTable[i][1];
   }else if (strcmp(sensor_name, "SENSOR_SONY_IMX219_RPI") == 0) {
       double multiplier = 0;
       *exposure_time_mapped = (1080 * exposure_time / 33);
@@ -836,6 +831,7 @@ int aewb_write_to_sensor(AewbHandle *handle)
     return ret;
 }
 
+
 int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
 {
     vx_status status = VX_FAILURE;
@@ -853,7 +849,9 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
 
     status = TI_2A_wrapper_process(&handle->ti_2a_wrapper, &handle->aewb_config,
             h3a_ptr, &handle->sensor_in_data, aewb_ptr,
-            &handle->sensor_out_data);
+            &handle->sensor_out_data
+    );
+
     if (status) {
         TIOVX_MODULE_ERROR("[AEWB] Process call failed: %d", status);
     }
