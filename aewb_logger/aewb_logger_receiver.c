@@ -50,8 +50,9 @@ int32_t aewb_logger_recv_bytes(aewb_logger_receiver_state_t *p_state)
 
 int32_t aewb_logger_recv_log(aewb_logger_receiver_state_t *p_state)
 {
-    if (p_state==NULL)
-        return 0;
+    if (p_state == NULL) {
+        return 0U;
+    }
 
     return aewb_logger_recv_bytes(p_state);
 }
