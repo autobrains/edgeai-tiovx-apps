@@ -1,9 +1,10 @@
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "aewb_logger_receiver.h"
 #include "aewb_logger_types.h"
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
 
 
 aewb_logger_receiver_state_t *aewb_logger_create_receiver(const char *bind_ip, in_port_t port) {
