@@ -48,8 +48,9 @@ aewb_logger_sender_state_t *aewb_logger_create_sender(const char *in_dest_ip, in
     bool final_enable;
 
     get_ip_port_with_envvar_override(in_dest_ip, in_dest_port, &final_enable, &final_dest_ip, &final_dest_port);
-    if (final_enable==false)
+    if (final_enable == false) {
         return NULL; // future aewb_logger_send_log() calls will not send anything
+    }
 
     printf("aewb_logger_create_sender: enable %d, ip %s, port %d\n", final_enable, final_dest_ip, final_dest_port);
 
