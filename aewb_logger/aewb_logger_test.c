@@ -2,7 +2,7 @@
 #include "aewb_logger_receiver.h"
 
 #ifdef NDEBUG
-#error "make sure cmake CMAKE_BUILD_TYPE is set to Debug, ow assert will be nop"
+#error "make sure cmake CMAKE_BUILD_TYPE is set to Debug, otherwise assert will be nop"
 #endif
 
 void test_send_receive_bytes() {
