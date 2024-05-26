@@ -43,9 +43,9 @@ void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_
 }
 
 aewb_logger_sender_state_t *aewb_logger_create_sender(const char *in_dest_ip, in_port_t in_dest_port) {
-    const char *final_dest_ip;
-    in_port_t final_dest_port;
-    bool final_enable;
+    const char *final_dest_ip = NULL;
+    in_port_t final_dest_port = {0U};
+    bool final_enable = false;
 
     get_ip_port_with_envvar_override(in_dest_ip, in_dest_port, &final_enable, &final_dest_ip, &final_dest_port);
     if (final_enable == false) {
