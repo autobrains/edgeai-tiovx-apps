@@ -78,7 +78,7 @@
 #define AEWB_DEFAULT_SENSOR "SENSOR_SONY_IMX219_RPI"
 
 #define ISS_IMX390_GAIN_TBL_SIZE                (71U)
-#define ISS_IMX728_GAIN_TBL_SIZE                (422U)
+#define ISS_IMX728_GAIN_TBL_SIZE                (421U)
 
 static const uint16_t gIMX390GainsTable[ISS_IMX390_GAIN_TBL_SIZE][2U] = {
   {1024, 0x20},
@@ -592,7 +592,7 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
     
     p_ae_dynPrms->exposureTimeStepSize         = 1000;  // usec
     p_ae_dynPrms->exposureTimeRange[count].min = 8000;
-    p_ae_dynPrms->exposureTimeRange[count].max = 20000;
+    p_ae_dynPrms->exposureTimeRange[count].max = 12000;
     p_ae_dynPrms->analogGainRange[count].min = 5192;
     p_ae_dynPrms->analogGainRange[count].max = 128914;
     p_ae_dynPrms->digitalGainRange[count].min = 256;
@@ -840,8 +840,6 @@ int aewb_write_to_sensor(AewbHandle *handle)
     if (ret < 0) {
         TIOVX_MODULE_ERROR("[AEWB] Unable to call analog gain ioctl: %d", ret);
     }
-    
-    //TIOVX_MODULE_ERROR("exposure time: %d, analog gain: %d\n", handle->sensor_out_data.aePrms.exposureTime[0], handle->sensor_out_data.aePrms.analogGain[0]);
 
     return ret;
 }
