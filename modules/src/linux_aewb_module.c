@@ -72,6 +72,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <linux/videodev2.h>
+#include <fcntl.h>
 
 #define AEWB_DEFAULT_DEVICE "/dev/v4l-imx219-subdev0"
 #define AEWB_DEFAULT_2A_FILE "/opt/imaging/imx219/linear/dcc_2a.bin"
@@ -579,6 +580,276 @@ static const uint32_t gIMX728GainsTable[ISS_IMX728_GAIN_TBL_SIZE][2U] =
   {128914, 0x1A4}
 };
 
+typedef struct {
+    int targetBrightnessRangeMin;
+    int targetBrightnessRangeMax;
+    int targetBrightness;
+    int threshold;
+    int enableBlc;
+    int exposureTimeStepSize;
+    int exposureTimeRangeMin;
+    int exposureTimeRangeMax;
+    int analogGainRangeMin;
+    int analogGainRangeMax;
+    int digitalGainRangeMin;
+    int digitalGainRangeMax;
+    int saveLogs;
+} manual_control_config_params_t;
+
+typedef struct {
+    int analogGain;
+    int digitalGain;
+    int exposureTime;
+    int controlEnabled;
+    int printValues;
+} manual_control_runtime_params_t;
+
+#define manual_control_apply_config(aewb_input, config_input) (aewb_input = config_input != -1 ? config_input : aewb_input)
+
+const char *manual_control_pipe = "./aewb_manual_control";
+const char *manual_control_config_file = "./aewb_manual_control_config.json";
+const char *manual_control_log_file = "./aewb_manual_control_log.txt";
+int manual_control_fd = -1;
+FILE *manual_control_logs = NULL;
+int manual_control_config_uploaded = 0;
+
+manual_control_runtime_params_t manual_control_runtime;
+manual_control_config_params_t manual_control_config;
+
+void manual_control_log(char *fmt, ...)
+{
+    char tmp[128];
+    va_list args;
+    struct timespec tms;
+    uint64_t timestamp = 0;
+
+    va_start(args, fmt);
+    vsprintf(tmp, fmt, args);
+    va_end(args);
+
+    if (manual_control_config.saveLogs > 0 && manual_control_logs) {
+        if (!clock_gettime(CLOCK_MONOTONIC, &tms)) {
+            timestamp = tms.tv_sec * 1000000;
+            timestamp += tms.tv_nsec / 1000;
+        }
+        fprintf(manual_control_logs, "%lu  %s", timestamp, tmp);
+    }
+
+    printf("[TIOVX_MODULES][AEWB][Manual Control]: %s", tmp);
+}
+
+int manual_control_try_parse_command(int set, int get, char *token, char *param, char *description, int *var, int use_with_auto)
+{
+    if (strstr(token, param) != NULL) {
+        if (set && (manual_control_runtime.controlEnabled || use_with_auto)) {
+            if (!(token = strtok(NULL, " "))) {
+                return 1;
+            }
+            *var = atoi(token);
+            manual_control_log("Set %s with value: %d\n", description, *var);
+        } else if (get) {
+            manual_control_log("Get %s value: %d\n", description, *var);
+        }
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void manual_control_process()
+{
+    char strbuf[128];
+    char *token = NULL;
+    int command_set = 0;
+    int command_get = 0;
+
+    if (read(manual_control_fd, strbuf, 128) <= 0) {
+        return;
+    }
+
+    if (!(token = strtok(strbuf, " "))) {
+        manual_control_log("Unknown command format: %s\n", strbuf);
+        return;
+    }
+
+    if (strstr(token, "set") != NULL) {
+        if (!(token = strtok(NULL, " "))) {
+            return;
+        }
+
+        command_set = 1;
+    } else if (strstr(token, "get") != NULL) {
+
+        if (!(token = strtok(NULL, " "))) {
+            return;
+        }
+
+        command_get = 1;
+    } else {
+        manual_control_log("Unknown command: %s\n", token);
+        return;
+    }
+
+    if (manual_control_try_parse_command(command_set, command_get, token, "exposure", "Exposure Time", &manual_control_runtime.exposureTime, false)) return;
+    if (manual_control_try_parse_command(command_set, command_get, token, "again", "Analog Gain", &manual_control_runtime.analogGain, false)) return;
+    if (manual_control_try_parse_command(command_set, command_get, token, "dgain", "Digital Gain", &manual_control_runtime.digitalGain, false)) return;
+    if (manual_control_try_parse_command(command_set, command_get, token, "manual", "AEWB Manual Control", &manual_control_runtime.controlEnabled, true)) return;
+    if (manual_control_try_parse_command(command_set, command_get, token, "printval", "Contiguous Params Printing", &manual_control_runtime.printValues, true)) return;
+
+    // You shouldn't reach this place
+    manual_control_log("Unknown parameter: %s\n", token);
+}
+
+int manual_control_parse_param(char * str, const char *param, int *var) {
+  char *delim = NULL;
+  
+  if (*var == -1 && strstr(str, param)) {
+    if (!(delim = strchr(str, ':'))) {
+        return 0;
+    }
+    *var = atoi(delim + 1);
+    manual_control_log("Apply \"%s\" from the config file with value: %d\n", param, *var);
+    return 1;
+  }
+
+  return 0;
+}
+
+int manual_control_load_config_from_file()
+{
+    char *line = NULL;
+    size_t len = 0;
+    int start_parse = 0;
+    FILE *file = NULL;
+    int ret = 0;
+
+    file = fopen(manual_control_config_file, "r");
+    if (file == NULL) {
+        manual_control_log("Failed to open the config file with errno %d", errno);
+    }
+
+    while (getline(&line, &len, file) != -1) {
+        if (strstr(line, "{")) {
+            start_parse = 1;
+            continue;
+        } else if (strstr(line, "}")) {
+            ret = 1;
+            break;
+        }
+
+        if (start_parse) {
+            if (manual_control_parse_param(line, "targetBrightnessRangeMin", &manual_control_config.targetBrightnessRangeMin)) continue;
+            if (manual_control_parse_param(line, "targetBrightnessRangeMax", &manual_control_config.targetBrightnessRangeMax)) continue;
+            if (manual_control_parse_param(line, "targetBrightness", &manual_control_config.targetBrightness)) continue;
+            if (manual_control_parse_param(line, "threshold", &manual_control_config.threshold)) continue;
+            if (manual_control_parse_param(line, "enableBlc", &manual_control_config.enableBlc)) continue;
+            if (manual_control_parse_param(line, "exposureTimeStepSize", &manual_control_config.exposureTimeStepSize)) continue;
+            if (manual_control_parse_param(line, "exposureTimeRangeMin", &manual_control_config.exposureTimeRangeMin)) continue;
+            if (manual_control_parse_param(line, "exposureTimeRangeMax", &manual_control_config.exposureTimeRangeMax)) continue;
+            if (manual_control_parse_param(line, "analogGainRangeMin", &manual_control_config.analogGainRangeMin)) continue;
+            if (manual_control_parse_param(line, "analogGainRangeMax", &manual_control_config.analogGainRangeMax)) continue;
+            if (manual_control_parse_param(line, "digitalGainRangeMin", &manual_control_config.digitalGainRangeMin)) continue;
+            if (manual_control_parse_param(line, "digitalGainRangeMax", &manual_control_config.digitalGainRangeMax)) continue;
+            if (manual_control_parse_param(line, "saveLogs", &manual_control_config.saveLogs)) continue;
+        }
+    }
+
+    fclose(file);
+    return ret;
+}
+
+int aewb_write_to_sensor_manual(int fd)
+{
+    int ret = -1;
+    struct v4l2_control control;
+
+    control.id = V4L2_CID_EXPOSURE;
+    control.value = manual_control_runtime.exposureTime;
+    ret = ioctl (fd, VIDIOC_S_CTRL, &control);
+    if (ret < 0) {
+        manual_control_log("Unable to call exposure ioctl: %d", ret);
+        return ret;
+    }
+
+    control.id = V4L2_CID_ANALOGUE_GAIN;
+    control.value = manual_control_runtime.analogGain;
+    ret = ioctl (fd, VIDIOC_S_CTRL, &control);
+    if (ret < 0) {
+        manual_control_log("Unable to call analog gain ioctl: %d", ret);
+    }
+
+    return ret;
+}
+
+void manual_control_init()
+{
+    int fd = -1;
+
+    if (manual_control_fd >= 0) {
+        return;
+    }
+
+    if (access(manual_control_config_file, R_OK) != 0) {
+        // The config file doesn't exist.
+        // Do not init the IPC.
+        return;
+    }
+
+    mkfifo(manual_control_pipe, 0666);
+    fd = open(manual_control_pipe, O_CREAT | O_RDWR);
+
+
+    if (fd < 0) {
+        manual_control_log("Failed to create the Interface pipe\n");
+    } else {
+        if (fcntl(fd, F_SETFL, O_NONBLOCK)) {
+            manual_control_log("Failed to set NONBLOCK option to the pipe\n");
+        }
+        manual_control_fd = fd;
+    }
+
+    // Reset the config params
+    manual_control_config.targetBrightnessRangeMin = -1;
+    manual_control_config.targetBrightnessRangeMax = -1;
+    manual_control_config.targetBrightness = -1;
+    manual_control_config.threshold = -1;
+    manual_control_config.enableBlc = -1;
+    manual_control_config.exposureTimeStepSize = -1;
+    manual_control_config.exposureTimeRangeMin = -1;
+    manual_control_config.exposureTimeRangeMax = -1;
+    manual_control_config.analogGainRangeMin = -1;
+    manual_control_config.analogGainRangeMax = -1;
+    manual_control_config.digitalGainRangeMin = -1;
+    manual_control_config.digitalGainRangeMax = -1;
+    manual_control_config.saveLogs = -1;
+
+    manual_control_config_uploaded = manual_control_load_config_from_file();
+
+    // Reset the runtime params
+    manual_control_runtime.analogGain = 0;
+    manual_control_runtime.digitalGain = 0;
+    manual_control_runtime.exposureTime = 0;
+    manual_control_runtime.controlEnabled = 0;
+    manual_control_runtime.printValues = 0;
+
+
+    manual_control_logs = fopen(manual_control_log_file, "a");
+    if (manual_control_logs == NULL) {
+        manual_control_log("Failed to open the logs file with %d\n", errno);
+    }
+}
+
+void manual_control_deinit()
+{
+    if(manual_control_fd >= 0) {
+        close(manual_control_fd);
+        unlink(manual_control_pipe);
+    }
+
+    if (manual_control_logs) {
+        fclose(manual_control_logs);
+    }
+}
 
 void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
 {
@@ -597,6 +868,36 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
     p_ae_dynPrms->analogGainRange[count].max = 128914;
     p_ae_dynPrms->digitalGainRange[count].min = 256;
     p_ae_dynPrms->digitalGainRange[count].max = 256;
+
+    if (manual_control_config_uploaded) {
+        // Load the params from the config file if possible
+        manual_control_apply_config(p_ae_dynPrms->targetBrightnessRange.min, manual_control_config.targetBrightnessRangeMin);
+        manual_control_apply_config(p_ae_dynPrms->targetBrightnessRange.max, manual_control_config.targetBrightnessRangeMax);
+        manual_control_apply_config(p_ae_dynPrms->targetBrightness, manual_control_config.targetBrightness);
+        manual_control_apply_config(p_ae_dynPrms->threshold, manual_control_config.threshold);
+        manual_control_apply_config(p_ae_dynPrms->enableBlc, manual_control_config.enableBlc);
+        manual_control_apply_config(p_ae_dynPrms->exposureTimeStepSize, manual_control_config.exposureTimeStepSize);
+        manual_control_apply_config(p_ae_dynPrms->exposureTimeRange[count].min, manual_control_config.exposureTimeRangeMin);
+        manual_control_apply_config(p_ae_dynPrms->exposureTimeRange[count].max, manual_control_config.exposureTimeRangeMax);
+        manual_control_apply_config(p_ae_dynPrms->analogGainRange[count].min, manual_control_config.analogGainRangeMin);
+        manual_control_apply_config(p_ae_dynPrms->analogGainRange[count].max, manual_control_config.analogGainRangeMax);
+        manual_control_apply_config(p_ae_dynPrms->digitalGainRange[count].min, manual_control_config.digitalGainRangeMin);
+        manual_control_apply_config(p_ae_dynPrms->digitalGainRange[count].max, manual_control_config.digitalGainRangeMax);
+
+        manual_control_log("Loading parameters from the config file. Final parameters are:\n");
+        manual_control_log("   targetBrightnessRange.min = %d\n", p_ae_dynPrms->targetBrightnessRange.min);
+        manual_control_log("   targetBrightnessRange.max = %d\n", p_ae_dynPrms->targetBrightnessRange.max);
+        manual_control_log("   targetBrightness = %d\n", p_ae_dynPrms->targetBrightness);
+        manual_control_log("   threshold = %d\n", p_ae_dynPrms->threshold);
+        manual_control_log("   enableBlc = %d\n", p_ae_dynPrms->enableBlc);
+        manual_control_log("   exposureTimeStepSize = %d\n", p_ae_dynPrms->exposureTimeStepSize);
+        manual_control_log("   exposureTimeRange[count].min = %d\n", p_ae_dynPrms->exposureTimeRange[count].min);
+        manual_control_log("   exposureTimeRange[count].max = %d\n", p_ae_dynPrms->exposureTimeRange[count].max);
+        manual_control_log("   analogGainRange[count].min = %d\n", p_ae_dynPrms->analogGainRange[count].min);
+        manual_control_log("   analogGainRange[count].max = %d\n", p_ae_dynPrms->analogGainRange[count].max);
+        manual_control_log("   digitalGainRange[count].min = %d\n", p_ae_dynPrms->digitalGainRange[count].min);
+        manual_control_log("   digitalGainRange[count].max = %d\n", p_ae_dynPrms->digitalGainRange[count].max);
+    }
     count++;
 
     p_ae_dynPrms->numAeDynParams = count;
@@ -793,6 +1094,9 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg)
         goto free_2a_file;
     }
 
+    // Should be before the params get call
+    manual_control_init();
+
     if (strcmp(cfg->sensor_name, "SENSOR_SONY_IMX390_UB953_D3") == 0) {
       get_imx390_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     } else if (strcmp(cfg->sensor_name, "SENSOR_OV2312_UB953_LI") == 0) {
@@ -826,6 +1130,11 @@ int aewb_write_to_sensor(AewbHandle *handle)
             handle->sensor_out_data.aePrms.analogGain[0],
             &coarse_integration_time, &analog_gain);
 
+    // To smooth the switching between 2A and the manual control
+    manual_control_runtime.exposureTime = coarse_integration_time;
+    manual_control_runtime.analogGain = analog_gain;
+    manual_control_runtime.digitalGain = analog_gain;
+
     control.id = V4L2_CID_EXPOSURE;
     control.value = coarse_integration_time;
     ret = ioctl (handle->fd, VIDIOC_S_CTRL, &control);
@@ -852,6 +1161,15 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
     tivx_h3a_data_t *h3a_ptr = NULL;
     tivx_ae_awb_params_t *aewb_ptr = NULL;
 
+    manual_control_process();
+    if (manual_control_runtime.printValues) {
+        manual_control_log("Printval. Exposure: %d, AGain: %d, DGain: %d\n", manual_control_runtime.exposureTime, manual_control_runtime.analogGain, manual_control_runtime.digitalGain);
+    }
+    if (manual_control_runtime.controlEnabled) {
+        aewb_write_to_sensor_manual(handle->fd);
+        return VX_SUCCESS;
+    }
+
     vxMapUserDataObject ((vx_user_data_object)h3a_buf->handle, 0,
             sizeof (tivx_h3a_data_t), &h3a_buf_map_id, (void **) &h3a_ptr,
             VX_READ_ONLY, VX_MEMORY_TYPE_HOST, 0);
@@ -877,6 +1195,8 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
 int aewb_delete_handle(AewbHandle *handle)
 {
     int status = 0;
+
+    manual_control_deinit();
 
     TI_2A_wrapper_delete(&handle->ti_2a_wrapper);
     tivxMemFree((void *)handle->dcc_2a_buf, handle->dcc_2a_buf_size,
