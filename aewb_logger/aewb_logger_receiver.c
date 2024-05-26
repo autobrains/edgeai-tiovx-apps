@@ -56,8 +56,9 @@ int32_t aewb_logger_recv_log(aewb_logger_receiver_state_t *p_state)
 }
 
 void aewb_logger_destroy_receiver(aewb_logger_receiver_state_t *p_state) {
-    if (p_state==NULL)
+    if (p_state == NULL) {
         return;
+    }
 
     close(p_state->sock_fd);
     free(p_state);
