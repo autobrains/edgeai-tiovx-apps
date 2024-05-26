@@ -3,8 +3,56 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
 
-aewb_logger_sender_state_t *aewb_logger_create_sender(const char *dest_ip, in_port_t port) {
+void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_port, bool *out_enable, const char **out_dest_ip, in_port_t *out_dest_port) {
+    const char *env_aewb_log_en_str = getenv("AEWB_LOG_EN");
+    const char *env_aewb_log_dest_ip_str = getenv("AEWB_LOG_DEST_IP");
+    const char *env_aewb_log_dest_port_str = getenv("AEWB_LOG_DEST_PORT");
+    long env_aewb_log_dest_port = 0;
+    
+    if (env_aewb_log_en_str && strcmp(env_aewb_log_en_str, "0")==0) {
+        *out_enable = false;
+    }
+    else {
+        *out_enable = true;
+    }
+
+    if (env_aewb_log_dest_ip_str) {
+         // env var ip takes precedence over function arg
+        *out_dest_ip = env_aewb_log_dest_ip_str;
+    }
+    else {
+        *out_dest_ip = in_dest_ip;
+    }
+
+    if (env_aewb_log_dest_port_str) {
+         // env var port takes precedence over function arg
+        errno = 0;
+        env_aewb_log_dest_port = strtol(env_aewb_log_dest_port_str, NULL, 10);
+        if (errno)
+            env_aewb_log_dest_port = 0;
+    }
+
+    if (env_aewb_log_dest_port>0) {
+        *out_dest_port = (in_port_t)env_aewb_log_dest_port;
+    }
+    else { 
+        *out_dest_port = (in_port_t)in_dest_port;
+    }
+}
+
+aewb_logger_sender_state_t *aewb_logger_create_sender(const char *in_dest_ip, in_port_t in_dest_port) {
+    const char *final_dest_ip;
+    in_port_t final_dest_port;
+    bool final_enable;
+
+    get_ip_port_with_envvar_override(in_dest_ip, in_dest_port, &final_enable, &final_dest_ip, &final_dest_port);
+    if (final_enable==false)
+        return NULL; // future aewb_logger_send_log() calls will not send anything
+
+    printf("aewb_logger_create_sender: enable %d, ip %s, port %d\n", final_enable, final_dest_ip, final_dest_port);
+
     aewb_logger_sender_state_t *p_state = malloc(sizeof(aewb_logger_sender_state_t));
     memset(p_state, 0, sizeof(aewb_logger_sender_state_t));
 
@@ -15,8 +63,8 @@ aewb_logger_sender_state_t *aewb_logger_create_sender(const char *dest_ip, in_po
     }
 
     p_state->dest_addr.sin_family = AF_INET;
-    p_state->dest_addr.sin_port = htons(port);
-    if (inet_pton(AF_INET, dest_ip, &p_state->dest_addr.sin_addr) <= 0) {
+    p_state->dest_addr.sin_port = htons(final_dest_port);
+    if (inet_pton(AF_INET, final_dest_ip, &p_state->dest_addr.sin_addr) <= 0) {
         perror("Invalid address/ Address not supported");
         return NULL;
     }
