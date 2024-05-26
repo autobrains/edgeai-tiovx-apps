@@ -79,7 +79,7 @@ typedef struct {
 } log_h3a_aewb_paxel_data_t;
 
 typedef struct {
-    log_h3a_aewb_paxel_data_t* h3a_res;     // poiter to input data for AWB
+    log_h3a_aewb_paxel_data_t *h3a_res;     // pointer to input data for AWB
     uint16_t               h3a_data_x;  // X size of H3A data, blocks (paxels)
     uint16_t               h3a_data_y;  // Y size of H3A data, blocks (paxels)
     uint16_t               pix_in_pax;
