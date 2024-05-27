@@ -21,4 +21,3 @@ set(TEST_SRC_FILES
 
 build_app(aewb_logger_test
           ${TEST_SRC_FILES})
-          

@@ -831,7 +831,6 @@ int aewb_write_to_sensor(AewbHandle *handle)
     return ret;
 }
 
-
 int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
 {
     vx_status status = VX_FAILURE;
@@ -849,8 +848,7 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
 
     status = TI_2A_wrapper_process(&handle->ti_2a_wrapper, &handle->aewb_config,
             h3a_ptr, &handle->sensor_in_data, aewb_ptr,
-            &handle->sensor_out_data
-    );
+            &handle->sensor_out_data);
 
     if (status) {
         TIOVX_MODULE_ERROR("[AEWB] Process call failed: %d", status);
@@ -879,4 +877,3 @@ int aewb_delete_handle(AewbHandle *handle)
 
     return status;
 }
-

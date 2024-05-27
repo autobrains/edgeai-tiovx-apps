@@ -1,15 +1,15 @@
-#include "aewb_logger_sender.h"
-#include "aewb_logger_types.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#include "aewb_logger_sender.h"
+#include "aewb_logger_types.h"
 
 void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_port, bool *out_enable, const char **out_dest_ip, in_port_t *out_dest_port) {
     const char *env_aewb_log_en_str = getenv("AEWB_LOG_EN");
     const char *env_aewb_log_dest_ip_str = getenv("AEWB_LOG_DEST_IP");
     const char *env_aewb_log_dest_port_str = getenv("AEWB_LOG_DEST_PORT");
-    long env_aewb_log_dest_port = 0U;
+    in_port_t env_aewb_log_dest_port = 0U;
     
     if (env_aewb_log_en_str && strcmp(env_aewb_log_en_str, "0") == 0U) {
         *out_enable = false;
@@ -29,13 +29,13 @@ void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_
     if (env_aewb_log_dest_port_str) {
          // env var port takes precedence over function arg
         errno = 0U;
-        env_aewb_log_dest_port = strtol(env_aewb_log_dest_port_str, NULL, 10U);
+        env_aewb_log_dest_port = strtol(env_aewb_log_dest_port_str, NULL, 10);
         if (errno)
             env_aewb_log_dest_port = 0U;
     }
 
     if (env_aewb_log_dest_port > 0U) {
-        *out_dest_port = (in_port_t)env_aewb_log_dest_port;
+        *out_dest_port = env_aewb_log_dest_port;
     }
     else { 
         *out_dest_port = (in_port_t)in_dest_port;
