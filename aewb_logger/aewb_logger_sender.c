@@ -9,9 +9,9 @@ void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_
     const char *env_aewb_log_en_str = getenv("AEWB_LOG_EN");
     const char *env_aewb_log_dest_ip_str = getenv("AEWB_LOG_DEST_IP");
     const char *env_aewb_log_dest_port_str = getenv("AEWB_LOG_DEST_PORT");
-    long env_aewb_log_dest_port = 0;
+    long env_aewb_log_dest_port = 0U;
     
-    if (env_aewb_log_en_str && strcmp(env_aewb_log_en_str, "0")==0) {
+    if (env_aewb_log_en_str && strcmp(env_aewb_log_en_str, "0") == 0U) {
         *out_enable = false;
     }
     else {
@@ -28,13 +28,13 @@ void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_
 
     if (env_aewb_log_dest_port_str) {
          // env var port takes precedence over function arg
-        errno = 0;
-        env_aewb_log_dest_port = strtol(env_aewb_log_dest_port_str, NULL, 10);
+        errno = 0U;
+        env_aewb_log_dest_port = strtol(env_aewb_log_dest_port_str, NULL, 10U);
         if (errno)
-            env_aewb_log_dest_port = 0;
+            env_aewb_log_dest_port = 0U;
     }
 
-    if (env_aewb_log_dest_port>0) {
+    if (env_aewb_log_dest_port > 0U) {
         *out_dest_port = (in_port_t)env_aewb_log_dest_port;
     }
     else { 
@@ -65,7 +65,7 @@ aewb_logger_sender_state_t *aewb_logger_create_sender(const char *in_dest_ip, in
 
     p_state->dest_addr.sin_family = AF_INET;
     p_state->dest_addr.sin_port = htons(final_dest_port);
-    if (inet_pton(AF_INET, final_dest_ip, &p_state->dest_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, final_dest_ip, &p_state->dest_addr.sin_addr) <= 0U) {
         perror("Invalid address/ Address not supported");
         return NULL;
     }
@@ -203,7 +203,7 @@ int32_t aewb_logger_send_bytes(aewb_logger_sender_state_t *p_state)
             (const struct sockaddr *)&p_state->dest_addr, sizeof(p_state->dest_addr)
     );
 
-    if (num_bytes_written!=sizeof(p_state->buffer))
+    if (num_bytes_written != sizeof(p_state->buffer)) {
         printf("aewb_logger_send_bytes: error num_bytes_written!=sizeof(p_state->buffer), %d!=%lu\n",
                 num_bytes_written, sizeof(p_state->buffer));
 

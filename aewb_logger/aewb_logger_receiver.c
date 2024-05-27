@@ -34,15 +34,15 @@ aewb_logger_receiver_state_t *aewb_logger_create_receiver(const char *bind_ip, i
 
 int32_t aewb_logger_recv_bytes(aewb_logger_receiver_state_t *p_state)
 {
-    memset(&p_state->buffer, 0, sizeof(p_state->buffer));
+    memset(&p_state->buffer, 0U, sizeof(p_state->buffer));
 
     struct sockaddr src_addr;
     socklen_t src_addr_len;
-    int32_t num_bytes_written = recvfrom(p_state->sock_fd, (int8_t*)&p_state->buffer, sizeof(p_state->buffer),
+    int32_t num_bytes_written = recvfrom(p_state->sock_fd, (int8_t *)&p_state->buffer, sizeof(p_state->buffer),
                  MSG_WAITALL, (struct sockaddr *)&src_addr,
                  &src_addr_len);
 
-    if (num_bytes_written!=sizeof(p_state->buffer))
+    if (num_bytes_written != sizeof(p_state->buffer)) {
         printf("aewb_logger_recv_bytes: error num_bytes_written!=sizeof(p_state->buffer), %d!=%lu\n",
                 num_bytes_written, sizeof(p_state->buffer));
     return num_bytes_written;
