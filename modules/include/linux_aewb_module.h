@@ -67,7 +67,7 @@
 #include <tiovx_sensor_module.h>
 #include "ti_2a_wrapper.h"
 #include <TI/j7_kernels_imaging_aewb.h>
-#include <aewb_logger_sender.h>
+#include <aewb_logger_sender_types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,9 +98,6 @@ typedef struct {
     /*! \brief Sensor name as defined in Imaging repo */
     vx_char     sensor_name[ISS_SENSORS_MAX_NAME];
 } AewbCfg;
-
-struct _aewb_logger_sender_state_t; // avoid cyclic dependency
-typedef struct _aewb_logger_sender_state_t aewb_logger_sender_state_t;
 
 struct _AewbHandle {
     AewbCfg             cfg;

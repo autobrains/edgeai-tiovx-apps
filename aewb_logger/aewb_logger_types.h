@@ -55,20 +55,20 @@ typedef struct {
 } log_tiae_exp_t;
 
 typedef struct {
-    uint16_t        mode;                     // 0: auto, 1: manual, 2 : disabled
+    uint16_t            mode;                     // 0: auto, 1: manual, 2 : disabled
     log_tiae_exp_prog_t exposure_program;
-    int32_t         num_history;
-    int32_t         history_brightness[LOG_TIAE_MAX_HIST];
-    int32_t         avg_y;
-    int32_t         locked;
-    int32_t         lock_cnt;
-    int32_t         lock_thrld;
-    int32_t         blc_enable;
-    int32_t         blc_comp;
+    int32_t             num_history;
+    int32_t             history_brightness[LOG_TIAE_MAX_HIST];
+    int32_t             avg_y;
+    int32_t             locked;
+    int32_t             lock_cnt;
+    int32_t             lock_thrld;
+    int32_t             blc_enable;
+    int32_t             blc_comp;
     log_tiae_exp_t      prev_ae;
-    int32_t         frame_num_count;
-    int32_t         frame_num_start;
-    int32_t         frame_num_period;
+    int32_t             frame_num_count;
+    int32_t             frame_num_start;
+    int32_t             frame_num_period;
 } log_tiae_prm_t;
 
 typedef struct {
@@ -280,6 +280,5 @@ typedef struct {
     log_tivx_ae_awb_params_t ae_awb_result;
     log_tivx_h3a_data_t h3a_data;
 } log_aewb_message_t;
-
 
 #endif //_AEWB_LOGGER_TYPES_H

@@ -72,6 +72,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <linux/videodev2.h>
+#include <math.h>
 
 #define AEWB_DEFAULT_DEVICE "/dev/v4l-imx219-subdev0"
 #define AEWB_DEFAULT_2A_FILE "/opt/imaging/imx219/linear/dcc_2a.bin"

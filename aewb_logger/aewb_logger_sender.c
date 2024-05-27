@@ -5,7 +5,8 @@
 #include "aewb_logger_sender.h"
 #include "aewb_logger_types.h"
 
-void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_port, bool *out_enable, const char **out_dest_ip, in_port_t *out_dest_port) {
+void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_port, bool *out_enable, const char **out_dest_ip, in_port_t *out_dest_port)
+{
     const char *env_aewb_log_en_str = getenv("AEWB_LOG_EN");
     const char *env_aewb_log_dest_ip_str = getenv("AEWB_LOG_DEST_IP");
     const char *env_aewb_log_dest_port_str = getenv("AEWB_LOG_DEST_PORT");
@@ -42,10 +43,12 @@ void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_
     }
 }
 
-aewb_logger_sender_state_t *aewb_logger_create_sender(const char *in_dest_ip, in_port_t in_dest_port) {
+aewb_logger_sender_state_t *aewb_logger_create_sender(const char *in_dest_ip, in_port_t in_dest_port)
+{
     const char *final_dest_ip = NULL;
     in_port_t final_dest_port = {0U};
     bool final_enable = false;
+    aewb_logger_sender_state_t *p_state = NULL;
 
     get_ip_port_with_envvar_override(in_dest_ip, in_dest_port, &final_enable, &final_dest_ip, &final_dest_port);
     if (final_enable == false) {
@@ -54,23 +57,27 @@ aewb_logger_sender_state_t *aewb_logger_create_sender(const char *in_dest_ip, in
 
     printf("aewb_logger_create_sender: enable %d, ip %s, port %d\n", final_enable, final_dest_ip, final_dest_port);
 
-    aewb_logger_sender_state_t *p_state = malloc(sizeof(aewb_logger_sender_state_t));
+    p_state = malloc(sizeof(aewb_logger_sender_state_t));
     memset(p_state, 0, sizeof(aewb_logger_sender_state_t));
 
     // Creating socket file descriptor
     if ((p_state->sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("socket creation failed");
-        return NULL;
+        perror("aewb_logger_create_sender: socket creation failed");
+        goto handle_err;
     }
 
     p_state->dest_addr.sin_family = AF_INET;
     p_state->dest_addr.sin_port = htons(final_dest_port);
     if (inet_pton(AF_INET, final_dest_ip, &p_state->dest_addr.sin_addr) <= 0U) {
-        perror("Invalid address/ Address not supported");
-        return NULL;
+        perror("aewb_logger_create_sender: Invalid address/ Address not supported");
+        goto handle_err;
     }
 
     return p_state;   
+
+handle_err:
+    free(p_state);
+    return NULL;
 }
 
 void copy_to_log_message(log_aewb_message_t *dest, AewbHandle *src_handle, tivx_h3a_data_t *src_h3a_data, tivx_ae_awb_params_t *src_ae_awb_result)
@@ -206,6 +213,7 @@ int32_t aewb_logger_send_bytes(aewb_logger_sender_state_t *p_state)
     if (num_bytes_written != sizeof(p_state->buffer)) {
         printf("aewb_logger_send_bytes: error num_bytes_written!=sizeof(p_state->buffer), %d!=%lu\n",
                 num_bytes_written, sizeof(p_state->buffer));
+    }
 
     return num_bytes_written;
 }
@@ -224,7 +232,8 @@ int32_t aewb_logger_send_log(aewb_logger_sender_state_t *p_state, AewbHandle *ha
     return aewb_logger_send_bytes(p_state);
 }
 
-void aewb_logger_destroy_sender(aewb_logger_sender_state_t *p_state) {
+void aewb_logger_destroy_sender(aewb_logger_sender_state_t *p_state)
+{
     close(p_state->sock_fd);
     free(p_state);
 }
