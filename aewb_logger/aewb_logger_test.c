@@ -8,8 +8,6 @@
 void test_create_failure() {
     aewb_logger_sender_state_t *sender = aewb_logger_create_sender("333.444.555.666", 4321); // pass illegal ip
     aewb_logger_sender_state_t *receiver = aewb_logger_create_receiver("333.444.555.666", 4321); // pass illegal ip
-    printf("%x", sender);
-    printf("%x", receiver);
     assert(sender==NULL);
     assert(receiver==NULL);
 }
