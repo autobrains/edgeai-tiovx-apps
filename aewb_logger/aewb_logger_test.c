@@ -8,15 +8,15 @@
 void test_create_failure() {
     aewb_logger_sender_state_t *sender = aewb_logger_create_sender("333.444.555.666", 4321); // pass illegal ip
     aewb_logger_sender_state_t *receiver = aewb_logger_create_receiver("333.444.555.666", 4321); // pass illegal ip
-    assert(sender==NULL);
-    assert(receiver==NULL);
+    assert (sender == NULL);
+    assert (receiver == NULL);
 }
 
 void test_send_receive_bytes() {
     aewb_logger_sender_state_t *sender = aewb_logger_create_sender("192.168.5.3", 4321);
     aewb_logger_receiver_state_t *receiver = aewb_logger_create_receiver("192.168.5.3", 4321);
 
-    char *sbuf = (char*)&sender->buffer;
+    char *sbuf = (char *)&sender->buffer;
     sbuf[0] = 'a';
     sbuf[sizeof(sender->buffer)-1] = 'z';
 
@@ -28,7 +28,7 @@ void test_send_receive_bytes() {
 
     char *rbuf = (char*)&receiver->buffer;
     assert(rbuf[0]=='a');
-    assert(rbuf[sizeof(receiver->buffer)-1]=='z');
+    assert(rbuf[sizeof(receiver->buffer) - 1] == 'z');
 
     aewb_logger_destroy_sender(sender);
     aewb_logger_destroy_receiver(receiver);

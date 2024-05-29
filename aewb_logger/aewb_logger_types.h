@@ -3,10 +3,10 @@
 #include <stdint.h>
 #include <time.h>
 
-#define LOG_TIAE_MAX_RANGES 16
-#define LOG_TIAE_MAX_HIST   16
-#define LOG_MAX_AE_DYN_PARAMS 10
-#define LOG_ISS_SENSOR_MAX_EXPOSURE 3
+#define LOG_TIAE_MAX_RANGES 16U
+#define LOG_TIAE_MAX_HIST   16U
+#define LOG_MAX_AE_DYN_PARAMS 10U
+#define LOG_ISS_SENSOR_MAX_EXPOSURE 3U
 
 typedef struct
 {
