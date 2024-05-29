@@ -63,11 +63,11 @@
 #ifndef _AEWB_MODULE
 #define _AEWB_MODULE
 
+#include "ti_2a_wrapper.h"
 #include "tiovx_modules_types.h"
 #include <tiovx_sensor_module.h>
-#include "ti_2a_wrapper.h"
-#include <TI/j7_kernels_imaging_aewb.h>
 #include <aewb_logger_sender_types.h>
+#include <TI/j7_kernels_imaging_aewb.h>
 
 #ifdef __cplusplus
 extern "C" {
