@@ -1,7 +1,7 @@
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "aewb_logger_receiver.h"
 #include "aewb_logger_types.h"
 

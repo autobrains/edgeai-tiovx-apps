@@ -1,10 +1,10 @@
 #ifndef _AEWB_LOGGER_SENDER_H
 #define _AEWB_LOGGER_SENDER_H
 
-#include <sys/socket.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
-#include <stdlib.h>
+#include <sys/socket.h>
 #include "linux_aewb_module.h"
 #include "aewb_logger_types.h"
 #include "aewb_logger_sender_types.h"

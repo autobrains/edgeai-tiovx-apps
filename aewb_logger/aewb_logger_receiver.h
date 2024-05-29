@@ -1,10 +1,10 @@
 #ifndef _AEWB_LOGGER_RECEIVER_H
 #define _AEWB_LOGGER_RECEIVER_H
 
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include "aewb_logger_types.h"
 #include "aewb_logger_receiver_types.h"
 

@@ -63,6 +63,7 @@
 #include "linux_aewb_module.h"
 #include "tiovx_utils.h"
 #include "ti_2a_wrapper.h"
+#include "aewb_logger_sender.h"
 
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -79,7 +80,7 @@
 #define AEWB_DEFAULT_SENSOR "SENSOR_SONY_IMX219_RPI"
 
 #define ISS_IMX390_GAIN_TBL_SIZE                (71U)
-#define ISS_IMX728_GAIN_TBL_SIZE                (422U)
+#define ISS_IMX728_GAIN_TBL_SIZE                (421U)
 
 static const uint16_t gIMX390GainsTable[ISS_IMX390_GAIN_TBL_SIZE][2U] = {
   {1024, 0x20},
@@ -156,7 +157,7 @@ static const uint16_t gIMX390GainsTable[ISS_IMX390_GAIN_TBL_SIZE][2U] = {
 };
 
 
-static const uint32_t gIMX728GainsTable[ISS_IMX728_GAIN_TBL_SIZE][2U] =
+/*static const uint32_t gIMX728GainsTable[ISS_IMX728_GAIN_TBL_SIZE][2U] =
 {
   {1024, 0x0}, \
   {1036, 0x1}, \
@@ -579,7 +580,7 @@ static const uint32_t gIMX728GainsTable[ISS_IMX728_GAIN_TBL_SIZE][2U] =
   {125980, 0x1A2}, \
   {127438, 0x1A3}, \
   {128914, 0x1A4}
-};
+};*/
 
 
 void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)

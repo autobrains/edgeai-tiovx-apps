@@ -1,7 +1,7 @@
-#include <stdlib.h>
-#include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "aewb_logger_sender.h"
 #include "aewb_logger_types.h"
 
@@ -31,8 +31,9 @@ void get_ip_port_with_envvar_override(const char *in_dest_ip, in_port_t in_dest_
          // env var port takes precedence over function arg
         errno = 0U;
         env_aewb_log_dest_port = strtol(env_aewb_log_dest_port_str, NULL, 10);
-        if (errno)
+        if (errno) {
             env_aewb_log_dest_port = 0U;
+        }
     }
 
     if (env_aewb_log_dest_port > 0U) {
@@ -220,16 +221,18 @@ int32_t aewb_logger_send_bytes(aewb_logger_sender_state_t *p_state)
 
 int32_t aewb_logger_send_log(aewb_logger_sender_state_t *p_state, AewbHandle *handle, tivx_h3a_data_t *h3a_ptr, tivx_ae_awb_params_t *ae_awb_result)
 {
-    if (p_state==NULL)
+    int32_t bytes_sent = 0U;
+
+    if (p_state==NULL) {
         return 0;
+    }
 
     memset(&p_state->buffer, 0, sizeof(p_state->buffer));
-
     clock_gettime(CLOCK_REALTIME, &p_state->buffer.header.timestamp);
-
     aewb_logger_write_log_to_buffer(handle, h3a_ptr, ae_awb_result, &p_state->buffer);
-
-    return aewb_logger_send_bytes(p_state);
+    bytes_sent = aewb_logger_send_bytes(p_state);
+    
+    return bytes_sent;
 }
 
 void aewb_logger_destroy_sender(aewb_logger_sender_state_t *p_state)

@@ -1,7 +1,7 @@
 #ifndef _AEWB_LOGGER_TYPES_H
 #define _AEWB_LOGGER_TYPES_H
-#include <stdint.h>
 #include <time.h>
+#include <stdint.h>
 
 #define LOG_TIAE_MAX_RANGES 16U
 #define LOG_TIAE_MAX_HIST   16U
