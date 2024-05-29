@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include "linux_aewb_module.h"
+#include "linux_aewb_handle_type.h"
 #include "aewb_logger_types.h"
 #include "aewb_logger_sender_types.h"
 
