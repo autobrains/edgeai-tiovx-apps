@@ -63,8 +63,11 @@
 #ifndef _AEWB_MODULE
 #define _AEWB_MODULE
 
+#include "ti_2a_wrapper.h"
 #include "tiovx_modules_types.h"
 #include <tiovx_sensor_module.h>
+#include <aewb_logger_sender_types.h>
+#include <TI/j7_kernels_imaging_aewb.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -95,6 +98,19 @@ typedef struct {
     /*! \brief Sensor name as defined in Imaging repo */
     vx_char     sensor_name[ISS_SENSORS_MAX_NAME];
 } AewbCfg;
+
+struct _AewbHandle {
+    AewbCfg             cfg;
+    tivx_aewb_config_t  aewb_config;
+    SensorObj           sensor_obj;
+    uint8_t             *dcc_2a_buf;
+    uint32_t            dcc_2a_buf_size;
+    TI_2A_wrapper       ti_2a_wrapper;
+    sensor_config_get   sensor_in_data;
+    sensor_config_set   sensor_out_data;
+    int fd;
+    aewb_logger_sender_state_t *aewb_logger_sender_state_ptr;
+};
 
 typedef struct _AewbHandle AewbHandle;
 
