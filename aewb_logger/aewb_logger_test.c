@@ -18,7 +18,7 @@ void test_send_receive_bytes() {
 
     char *sbuf = (char *)&sender->buffer;
     sbuf[0] = 'a';
-    sbuf[sizeof(sender->buffer)-1] = 'z';
+    sbuf[sizeof(sender->buffer) - 1] = 'z';
 
     int32_t n_sent = aewb_logger_send_bytes(sender);
     assert(n_sent==sizeof(sender->buffer));
@@ -26,7 +26,7 @@ void test_send_receive_bytes() {
     int32_t n_recvd = aewb_logger_recv_bytes(receiver);
     assert(n_recvd==sizeof(sender->buffer));
 
-    char *rbuf = (char*)&receiver->buffer;
+    char *rbuf = (char *)&receiver->buffer;
     assert(rbuf[0]=='a');
     assert(rbuf[sizeof(receiver->buffer) - 1] == 'z');
 
