@@ -827,8 +827,6 @@ int aewb_write_to_sensor(AewbHandle *handle)
     if (ret < 0) {
         TIOVX_MODULE_ERROR("[AEWB] Unable to call analog gain ioctl: %d", ret);
     }
-    
-    //TIOVX_MODULE_ERROR("exposure time: %d, analog gain: %d\n", handle->sensor_out_data.aePrms.exposureTime[0], handle->sensor_out_data.aePrms.analogGain[0]);
 
     return ret;
 }

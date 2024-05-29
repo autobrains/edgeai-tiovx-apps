@@ -274,10 +274,7 @@ vx_status app_modules_linux_capture_dof_test(vx_int32 argc, vx_char* argv[])
     v4l2_capture_start(v4l2_capture_handle);
 
     for (int i = 0; i < APP_NUM_ITERATIONS; i++) {
-        do {
-            inbuf = v4l2_capture_dqueue_buf(v4l2_capture_handle);
-        } while (inbuf == NULL);
-
+        inbuf = v4l2_capture_dqueue_buf(v4l2_capture_handle);
         tiovx_modules_enqueue_buf(inbuf);
 
         outbuf = tiovx_modules_acquire_buf(out_buf_pool);

@@ -546,7 +546,7 @@ int32_t connect_blocks(GraphObj *graph,
     return 0;
 }
 
-int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, CmdArgs *cmd_args)
+int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
 {
     int32_t status;
     int32_t i, j;
@@ -642,16 +642,11 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, CmdArgs *cmd_args)
     }
 
     /* Dump graph as a dot file */
-    if(cmd_args->dump_dot)
+    status = tiovx_modules_export_graph(&graph, ".", "test_graph");
+    if (VX_SUCCESS != status)
     {
-        status = tiovx_modules_export_graph(&graph,
-                                            ".",
-                                            "edgeai-tiovx-apps-graph");
-        if (VX_SUCCESS != status)
-        {
-            TIOVX_APPS_ERROR("Error exporting graph as dot\n");
-            goto clean_graph;
-        }
+        TIOVX_APPS_ERROR("Error exporting graph as dot\n");
+        goto clean_graph;
     }
 
     /* Initialize perf stats */
@@ -968,7 +963,7 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, CmdArgs *cmd_args)
                 perf_overlay_buf_pool = output_blocks[i].perf_overlay_pad->buf_pool;
                 perf_overlay_buf = tiovx_modules_dequeue_buf(perf_overlay_buf_pool);
                 update_perf_overlay((vx_image)perf_overlay_buf->handle, &perf_stats_handle);
-                if(cmd_args->verbose)
+                if(verbose)
                 {
                     print_perf(&graph, &perf_stats_handle);
                 }
