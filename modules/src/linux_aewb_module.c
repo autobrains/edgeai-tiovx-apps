@@ -60,10 +60,11 @@
  *
  */
 
+#include "linux_aewb_module.h"
 #include "tiovx_utils.h"
 #include "ti_2a_wrapper.h"
-#include "linux_aewb_module.h"
 #include "aewb_logger_sender.h"
+#include "linux_aewb_handle_type.h"
 
 #include <sys/ioctl.h>
 #include <errno.h>
