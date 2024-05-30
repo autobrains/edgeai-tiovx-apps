@@ -186,6 +186,19 @@ function(build_app app_name)
 
 endfunction()
 
+function(build_app_no_install app_name)
+    add_executable(${app_name} ${ARGN})
+    target_link_libraries(${app_name}
+                          ${COMMON_LINK_LIBS}
+                          ${TARGET_LINK_LIBS}
+                          ${SYSTEM_LINK_LIBS}
+                         )
+
+    set(BIN_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+    set(BINS ${CMAKE_OUTPUT_DIR}/bin/${CMAKE_BUILD_TYPE}/${app_name})
+endfunction()
+
+
 # Function for building a node:
 # lib_name: Name of the library
 # lib_type: (STATIC, SHARED)

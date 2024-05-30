@@ -19,5 +19,5 @@ set(TEST_SRC_FILES
     aewb_logger_test.c
     )
 
-build_app(aewb_logger_test
+build_app_no_install(aewb_logger_test
           ${TEST_SRC_FILES})
