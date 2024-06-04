@@ -18,10 +18,15 @@ aewb_logger_receiver_state_t *aewb_logger_create_receiver(const char *bind_ip, i
 
     p_state->bind_addr.sin_family = AF_INET;
     p_state->bind_addr.sin_port = htons(port);
-    if (inet_pton(AF_INET, bind_ip, &p_state->bind_addr.sin_addr) <= 0) {
-        perror("aewb_logger_create_receiver: Invalid address/ Address not supported");
-        goto handle_err;
+    if (bind_ip==NULL || strcmp(bind_ip,"")==0) {
+        p_state->bind_addr.sin_addr.s_addr = (in_addr_t)INADDR_ANY;
     }
+    else {
+        if (inet_pton(AF_INET, bind_ip, &p_state->bind_addr.sin_addr) <= 0) {
+            perror("aewb_logger_create_receiver: Invalid address/ Address not supported");
+            goto handle_err;
+        }
+    }    
 
     if (bind(p_state->sock_fd, (const struct sockaddr *)&p_state->bind_addr, sizeof(p_state->bind_addr)) < 0) {
         perror("aewb_logger_create_receiver: bind failed");

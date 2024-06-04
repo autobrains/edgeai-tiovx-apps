@@ -6,4 +6,4 @@ mkdir build
 cd build
 cmake ..
 make -j2
-cp ../lib/Release/* /usr/lib/
+make install

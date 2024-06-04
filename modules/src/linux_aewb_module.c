@@ -595,8 +595,8 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
     p_ae_dynPrms->enableBlc = 0;
     
     p_ae_dynPrms->exposureTimeStepSize         = 1000;  // usec
-    p_ae_dynPrms->exposureTimeRange[count].min = 1000; 
-    p_ae_dynPrms->exposureTimeRange[count].max = 33000; 
+    p_ae_dynPrms->exposureTimeRange[count].min = 5000; 
+    p_ae_dynPrms->exposureTimeRange[count].max = 5000; 
     p_ae_dynPrms->analogGainRange[count].min = 1*1024;
     p_ae_dynPrms->analogGainRange[count].max = 32228*1024;
     p_ae_dynPrms->digitalGainRange[count].min = 256;
