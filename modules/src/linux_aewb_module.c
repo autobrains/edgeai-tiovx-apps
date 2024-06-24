@@ -64,7 +64,7 @@
 #include "tiovx_utils.h"
 #include "ti_2a_wrapper.h"
 #include "aewb_logger_sender.h"
-#include "linux_aewb_handle_type.h"
+#include "ae_params.h"
 
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -82,6 +82,9 @@
 
 #define ISS_IMX390_GAIN_TBL_SIZE                (71U)
 #define ISS_IMX728_GAIN_TBL_SIZE                (421U)
+
+#define AE_PARAMS_FROM_FILE 1
+aewb_logger_sender_state_t *aewb_logger_sender_state_ptr;
 
 static const uint16_t gIMX390GainsTable[ISS_IMX390_GAIN_TBL_SIZE][2U] = {
   {1024, 0x20},
@@ -586,6 +589,7 @@ static const uint16_t gIMX390GainsTable[ISS_IMX390_GAIN_TBL_SIZE][2U] = {
 
 void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
 {
+#if (AE_PARAMS_FROM_FILE == 0)
     uint8_t count = 0;
 
     p_ae_dynPrms->targetBrightnessRange.min = 30;
@@ -593,10 +597,10 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
     p_ae_dynPrms->targetBrightness = 45;
     p_ae_dynPrms->threshold = 5;
     p_ae_dynPrms->enableBlc = 0;
-    
-    p_ae_dynPrms->exposureTimeStepSize         = 1000;  // usec
-    p_ae_dynPrms->exposureTimeRange[count].min = 5000; 
-    p_ae_dynPrms->exposureTimeRange[count].max = 5000; 
+
+    p_ae_dynPrms->exposureTimeStepSize         = 1000; // usec
+    p_ae_dynPrms->exposureTimeRange[count].min = 5000;
+    p_ae_dynPrms->exposureTimeRange[count].max = 5000;
     p_ae_dynPrms->analogGainRange[count].min = 1*1024;
     p_ae_dynPrms->analogGainRange[count].max = 32228*1024;
     p_ae_dynPrms->digitalGainRange[count].min = 256;
@@ -604,6 +608,10 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
     count++;
 
     p_ae_dynPrms->numAeDynParams = count;
+#else
+    ae_params_get(p_ae_dynPrms);
+#endif
+
 }
 
 void get_imx219_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
@@ -719,6 +727,18 @@ void aewb_init_cfg(AewbCfg *cfg)
     cfg->awb_num_skip_frames = 0;
 }
 
+struct _AewbHandle {
+    AewbCfg             cfg;
+    tivx_aewb_config_t  aewb_config;
+    SensorObj           sensor_obj;
+    uint8_t             *dcc_2a_buf;
+    uint32_t            dcc_2a_buf_size;
+    TI_2A_wrapper       ti_2a_wrapper;
+    sensor_config_get   sensor_in_data;
+    sensor_config_set   sensor_out_data;
+    int fd;
+};
+
 AewbHandle *aewb_create_handle(AewbCfg *cfg)
 {
     AewbHandle *handle = NULL;
@@ -789,7 +809,7 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg)
       get_imx219_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     }
 
-    handle->aewb_logger_sender_state_ptr = aewb_logger_create_sender("192.168.5.1", 8081);
+    aewb_logger_sender_state_ptr = aewb_logger_create_sender("192.168.5.1", 8081);
 
     return handle;
 
@@ -845,7 +865,7 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
             VX_READ_ONLY, VX_MEMORY_TYPE_HOST, 0);
     vxMapUserDataObject ((vx_user_data_object)aewb_buf->handle, 0,
             sizeof (tivx_ae_awb_params_t), &aewb_buf_map_id,
-            (void **)&aewb_ptr, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, 0);
+            (void **)&aewb_ptr, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, 0);         
 
     status = TI_2A_wrapper_process(&handle->ti_2a_wrapper, &handle->aewb_config,
             h3a_ptr, &handle->sensor_in_data, aewb_ptr,
@@ -855,7 +875,15 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
         TIOVX_MODULE_ERROR("[AEWB] Process call failed: %d", status);
     }
 
-    aewb_logger_send_log(handle->aewb_logger_sender_state_ptr, handle, h3a_ptr, aewb_ptr);
+    aewb_logger_send_log(
+        aewb_logger_sender_state_ptr, 
+        &handle->ti_2a_wrapper,
+        &handle->sensor_in_data,
+        &handle->sensor_out_data,
+        &handle->aewb_config,
+        h3a_ptr,
+        aewb_ptr
+    );
 
     vxUnmapUserDataObject ((vx_user_data_object)h3a_buf->handle, h3a_buf_map_id);
     vxUnmapUserDataObject ((vx_user_data_object)aewb_buf->handle, aewb_buf_map_id);
@@ -873,7 +901,7 @@ int aewb_delete_handle(AewbHandle *handle)
     tivxMemFree((void *)handle->dcc_2a_buf, handle->dcc_2a_buf_size,
             TIVX_MEM_EXTERNAL);
     close(handle->fd);
-    aewb_logger_destroy_sender(handle->aewb_logger_sender_state_ptr);
+    aewb_logger_destroy_sender(aewb_logger_sender_state_ptr);
     free(handle);
 
     return status;

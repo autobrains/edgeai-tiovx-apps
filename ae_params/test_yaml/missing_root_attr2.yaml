@@ -1,0 +1,9 @@
+targetBrightnessRange:
+  min: 1
+  max: 2
+targetBrightness: 3
+threshold: 4
+enableBlc: 5
+exposureTimeStepSize: 6
+
+
