@@ -59,78 +59,71 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef _TIOVX_MODULES_CBS
-#define _TIOVX_MODULES_CBS
 
-#include "tiovx_multi_scaler_module.h"
-#include "tiovx_dl_color_convert_module.h"
-#include "tiovx_color_convert_module.h"
-#include "tiovx_viss_module.h"
-#include "tiovx_ldc_module.h"
-#include "tiovx_tee_module.h"
-#include "tiovx_tidl_module.h"
-#include "tiovx_dl_pre_proc_module.h"
-#include "tiovx_dl_post_proc_module.h"
-#include "tiovx_mosaic_module.h"
-#include "tiovx_obj_array_split_module.h"
-#include "tiovx_pyramid_module.h"
-#include "tiovx_delay_module.h"
-#include "tiovx_fakesink_module.h"
-#include "tiovx_fakesrc_module.h"
-#include "tiovx_pixelwise_multiply_module.h"
-#include "tiovx_pixelwise_add_module.h"
-#include "tiovx_lut_module.h"
+#include <tiovx_modules.h>
+#include <tiovx_utils.h>
 
-#if defined(SOC_J721E) || defined(SOC_J721S2) || defined(SOC_J784S4) || defined(SOC_J722S)
-#include "tiovx_display_module.h"
-#include "tiovx_capture_module.h"
-#include "tiovx_aewb_module.h"
-#include "tiovx_sde_module.h"
-#include "tiovx_sde_viz_module.h"
-#include "tiovx_dof_module.h"
-#include "tiovx_dof_viz_module.h"
-#endif
+#define APP_BUFQ_DEPTH   (1)
+#define APP_NUM_CH       (1)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define IMAGE_WIDTH  (640)
+#define IMAGE_HEIGHT (480)
 
-/*!
- * \brief Enum that lists all available modules.
- */
-typedef enum {
-    TIOVX_MULTI_SCALER = 0,
-    TIOVX_DL_COLOR_CONVERT,
-    TIOVX_COLOR_CONVERT,
-    TIOVX_VISS,
-    TIOVX_LDC,
-    TIOVX_TEE,
-    TIOVX_TIDL,
-    TIOVX_DL_PRE_PROC,
-    TIOVX_DL_POST_PROC,
-    TIOVX_MOSAIC,
-    TIOVX_OBJ_ARRAY_SPLIT,
-    TIOVX_PYRAMID,
-    TIOVX_DELAY,
-    TIOVX_FAKESINK,
-    TIOVX_FAKESRC,
-    TIOVX_PIXELWISE_MULTIPLY,
-    TIOVX_PIXELWISE_ADD,
-    TIOVX_LUT,
-#if defined(SOC_J721E) || defined(SOC_J721S2) || defined(SOC_J784S4) || defined(SOC_J722S)
-    TIOVX_DISPLAY,
-    TIOVX_CAPTURE,
-    TIOVX_AEWB,
-    TIOVX_SDE,
-    TIOVX_SDE_VIZ,
-    TIOVX_DOF,
-    TIOVX_DOF_VIZ,
-#endif
-    TIOVX_MODULES_NUM_MODULES,
-} NODE_TYPES;
+vx_status app_modules_pixelwise_add_test(vx_int32 argc, vx_char* argv[])
+{
+    vx_status status = VX_FAILURE;
+    GraphObj graph;
+    NodeObj *node = NULL;
+    TIOVXPixelwiseAddNodeCfg cfg;
+    BufPool *in_buf_pool[2] = {NULL}, *out_buf_pool = NULL;
+    Buf *inbuf[2] = {NULL}, *outbuf = NULL;
+    char input_filename[100];
+    char output_filename[100];
 
-#ifdef __cplusplus
+    sprintf(input_filename, "%s/raw_images/modules_test/baboon_640x480_nv12.yuv", EDGEAI_DATA_PATH);
+    sprintf(output_filename, "%s/output/baboon_x_2_640x480.u8", EDGEAI_DATA_PATH);
+
+    tiovx_pixelwise_add_init_cfg(&cfg);
+
+    cfg.input_cfg.width = IMAGE_WIDTH;
+    cfg.input_cfg.height = IMAGE_HEIGHT;
+    cfg.input_cfg.color_format = VX_DF_IMAGE_U8;
+    cfg.output_color_format = VX_DF_IMAGE_U8;
+    sprintf(cfg.target_string, TIVX_TARGET_DSP1);
+
+    status = tiovx_modules_initialize_graph(&graph);
+    node = tiovx_modules_add_node(&graph, TIOVX_PIXELWISE_ADD, (void *)&cfg);
+    status = tiovx_modules_verify_graph(&graph);
+
+    in_buf_pool[0] = node->sinks[0].buf_pool;
+    in_buf_pool[1] = node->sinks[1].buf_pool;
+    out_buf_pool = node->srcs[0].buf_pool;
+
+    inbuf[0] = tiovx_modules_acquire_buf(in_buf_pool[0]);
+    inbuf[1] = tiovx_modules_acquire_buf(in_buf_pool[1]);
+    outbuf = tiovx_modules_acquire_buf(out_buf_pool);
+
+    readImage(input_filename, (vx_image)inbuf[0]->handle);
+    readImage(input_filename, (vx_image)inbuf[1]->handle);
+
+    tiovx_modules_enqueue_buf(inbuf[0]);
+    tiovx_modules_enqueue_buf(inbuf[1]);
+    tiovx_modules_enqueue_buf(outbuf);
+
+    tiovx_modules_schedule_graph(&graph);
+    tiovx_modules_wait_graph(&graph);
+
+    inbuf[0] = tiovx_modules_dequeue_buf(in_buf_pool[0]);
+    inbuf[1] = tiovx_modules_dequeue_buf(in_buf_pool[1]);
+    outbuf = tiovx_modules_dequeue_buf(out_buf_pool);
+
+    writeImage(output_filename, (vx_image)outbuf->handle);
+
+    tiovx_modules_release_buf(inbuf[0]);
+    tiovx_modules_release_buf(inbuf[1]);
+    tiovx_modules_release_buf(outbuf);
+
+    tiovx_modules_clean_graph(&graph);
+
+    return status;
 }
-#endif
-
-#endif //_TIOVX_MODULES_CBS

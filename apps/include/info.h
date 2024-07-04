@@ -94,7 +94,7 @@ extern "C" {
 typedef enum {
     RTOS_CAM = 0,
     LINUX_CAM,
-    H264_VID,
+    VIDEO,
     RAW_IMG,
     NUM_INPUT_SOURCES
 } InputSource;
@@ -103,6 +103,7 @@ typedef enum {
     RTOS_DISPLAY = 0,
     LINUX_DISPLAY,
     H264_ENCODE,
+    H265_ENCODE,
     IMG_DIR,
     NUM_OUTPUT_SINKS
 } OutputSink;
@@ -209,15 +210,6 @@ typedef struct {
 
     /* Formatter */
     int32_t         formatter[6];
-
-    /* Label Offset */
-    int32_t         label_offset[1000];
-
-    /* Number of label Offset */
-    uint32_t        num_label_offset;
-
-    /* Label Index Offset */
-    int32_t         label_index_offset;
 
 } PostProcInfo;
 

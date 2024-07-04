@@ -17,6 +17,10 @@ set(SRC_FILES
     app_tiovx_dl_post_proc_module_test.c
     app_tiovx_mosaic_module_test.c
     app_tiovx_pyramid_module_test.c
+    app_tiovx_pixelwise_multiply_module_test.c
+    app_tiovx_pixelwise_add_module_test.c
+    app_tiovx_lut_module_test.c
+    app_tiovx_fakesrc_fakesink_module_test.c
     main.c)
 
 if ("${TARGET_OS}" STREQUAL "LINUX")
@@ -24,6 +28,7 @@ if ("${TARGET_OS}" STREQUAL "LINUX")
          SRC_FILES
          app_tiovx_v4l2_capture_module_test.c
          app_tiovx_linux_capture_display_test.c
+         app_tiovx_linux_multi_capture_display_test.c
          app_tiovx_linux_decode_display_test.c
          app_tiovx_linux_capture_encode_test.c)
 endif()

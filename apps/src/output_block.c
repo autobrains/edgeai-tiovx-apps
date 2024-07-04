@@ -63,6 +63,13 @@
 #include <apps/include/output_block.h>
 #include <apps/include/misc.h>
 
+#if defined(SOC_J784S4)
+static char *g_encode_devices[] = {"/dev/video1", "/dev/video3"};
+static uint8_t g_encode_devices_idx = 0;
+#else
+static char *g_encode_devices[] = {"/dev/video1"};
+static uint8_t g_encode_devices_idx = 0;
+#endif
 
 void initialize_output_block(OutputBlock *output_block)
 {
@@ -253,7 +260,7 @@ int32_t create_output_block(GraphObj *graph, OutputBlock *output_block)
         output_block->kms_obj.kms_display_handle = kms_display_create_handle(&kms_display_cfg);
     }
 
-    if(output_info->sink == H264_ENCODE)
+    if(output_info->sink == H264_ENCODE || output_info->sink == H265_ENCODE)
     {
         v4l2EncodeCfg v4l2_encode_cfg;
 
@@ -262,6 +269,25 @@ int32_t create_output_block(GraphObj *graph, OutputBlock *output_block)
         v4l2_encode_cfg.width = output_info->width;
         v4l2_encode_cfg.height = output_info->height;
         sprintf(v4l2_encode_cfg.file, output_info->output_path);
+
+        if(output_info->sink == H264_ENCODE)
+        {
+            v4l2_encode_cfg.encoding = V4L2_PIX_FMT_H264;
+        }
+        else if(output_info->sink == H265_ENCODE)
+        {
+            v4l2_encode_cfg.encoding = V4L2_PIX_FMT_HEVC;
+        }
+
+        sprintf(v4l2_encode_cfg.device,
+                g_encode_devices[g_encode_devices_idx]);
+
+        g_encode_devices_idx++;
+        if(g_encode_devices_idx >=
+            sizeof(g_encode_devices)/sizeof(g_encode_devices[0]))
+        {
+            g_encode_devices_idx = 0;
+        }
 
         output_block->v4l2_obj.v4l2_encode_handle = v4l2_encode_create_handle(&v4l2_encode_cfg);
 
