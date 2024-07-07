@@ -865,7 +865,7 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
             VX_READ_ONLY, VX_MEMORY_TYPE_HOST, 0);
     vxMapUserDataObject ((vx_user_data_object)aewb_buf->handle, 0,
             sizeof (tivx_ae_awb_params_t), &aewb_buf_map_id,
-            (void **)&aewb_ptr, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, 0);         
+            (void **)&aewb_ptr, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, 0);
 
     status = TI_2A_wrapper_process(&handle->ti_2a_wrapper, &handle->aewb_config,
             h3a_ptr, &handle->sensor_in_data, aewb_ptr,

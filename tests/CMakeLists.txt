@@ -49,4 +49,3 @@ endif()
 
 build_app(${PROJ_NAME}
           ${SRC_FILES})
-

@@ -13,6 +13,7 @@ set(SRC_FILES
 build_lib(aewb_logger      # Named argument: library name
           SHARED           # Named argument: library type
           0.1.0            # Named argument: library version
+          # The following all will be clubbed under ${ARGN}          
           ${SRC_FILES})
 
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
