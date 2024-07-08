@@ -83,7 +83,6 @@
 #define ISS_IMX390_GAIN_TBL_SIZE                (71U)
 #define ISS_IMX728_GAIN_TBL_SIZE                (421U)
 
-#define AE_PARAMS_FROM_FILE 1
 aewb_logger_sender_state_t *aewb_logger_sender_state_ptr;
 
 static const uint16_t gIMX390GainsTable[ISS_IMX390_GAIN_TBL_SIZE][2U] = {
@@ -589,7 +588,7 @@ static const uint16_t gIMX390GainsTable[ISS_IMX390_GAIN_TBL_SIZE][2U] = {
 
 void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
 {
-#if (AE_PARAMS_FROM_FILE == 0)
+#ifndef AE_PARAMS_FROM_FILE
     uint8_t count = 0;
 
     p_ae_dynPrms->targetBrightnessRange.min = 30;

@@ -52,3 +52,5 @@ build_lib(${PROJECT_NAME}  # Named argument: library name
           0.1.0            # Named argument: library version
           # The following all will be clubbed under ${ARGN}
           ${SRC_FILES})
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE AE_PARAMS_FROM_FILE)
