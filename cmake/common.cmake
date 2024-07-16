@@ -116,6 +116,7 @@ include_directories(${PROJECT_SOURCE_DIR}
                     ${PROJECT_SOURCE_DIR}/modules/core/include
                     ${PROJECT_SOURCE_DIR}/utils/include
                     ${PROJECT_SOURCE_DIR}/aewb_logger/
+                    ${PROJECT_SOURCE_DIR}/ae_params/
                     ${PSDK_INCLUDE_PATH}/processor_sdk/ivision
                     ${PSDK_INCLUDE_PATH}/processor_sdk/imaging
                     ${PSDK_INCLUDE_PATH}/processor_sdk/ti-perception-toolkit/include
@@ -304,6 +305,14 @@ function(build_lib lib_name lib_type lib_ver)
                           PROPERTIES
                           VERSION ${lib_ver}
                          )
+
+    set(SYSTEM_LINK_LIBS
+        glog
+    )                         
+
+    target_link_libraries(${lib_name}
+                        ${SYSTEM_LINK_LIBS}
+                        )
 
     set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
 
