@@ -65,6 +65,7 @@
 #include "ti_2a_wrapper.h"
 #include "aewb_logger_sender.h"
 #include "ae_params.h"
+#include "TI_aaa_ae.h"
 
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -608,7 +609,11 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
 
     p_ae_dynPrms->numAeDynParams = count;
 #else
-    ae_params_get(p_ae_dynPrms);
+    ae_params_t ae_params;
+    ae_params_get(&ae_params);
+    memcpy(p_ae_dynPrms, &ae_params.dyn_params, sizeof(IssAeDynamicParams));
+    TI_AE_set_cur_y_from_cc_pixels(ae_params.cur_y_from_cc_pixels);
+
 #endif
 
 }

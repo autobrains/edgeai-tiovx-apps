@@ -15,4 +15,4 @@ ranges:
     digitalGainRange:
       min: 11
       max: 12
-
+cur_y_from_cc_pixels: 0
