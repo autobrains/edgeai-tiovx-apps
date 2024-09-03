@@ -226,7 +226,8 @@ int32_t aewb_logger_send_log(
     sensor_config_set *sensor_out_data,
     tivx_aewb_config_t *aewb_config,
     tivx_h3a_data_t *h3a_data,
-    tivx_ae_awb_params_t *ae_awb_result)
+    tivx_ae_awb_params_t *ae_awb_result,
+    frame_brightness_params_t *avg_brightness)
 {
     int32_t bytes_sent = 0U;
     aewb_logger_sender_args_t sender_args;
@@ -246,6 +247,11 @@ int32_t aewb_logger_send_log(
     clock_gettime(CLOCK_REALTIME, &p_state->buffer.header.timestamp);
     aewb_logger_write_log_to_buffer(&sender_args, &p_state->buffer);
     bytes_sent = aewb_logger_send_bytes(p_state);
+    
+    avg_brightness->avg_brightness = sender_args.ti_2a_wrapper->p_ae_params->avg_y;
+    avg_brightness->exposure_time = sender_args.ti_2a_wrapper->p_ae_params->prev_ae.exposure_time;
+    avg_brightness->analog_gain = sender_args.ti_2a_wrapper->p_ae_params->prev_ae.analog_gain;
+    avg_brightness->digital_gain = sender_args.ti_2a_wrapper->p_ae_params->prev_ae.digital_gain;
     
     return bytes_sent;
 }

@@ -851,13 +851,14 @@ int aewb_write_to_sensor(AewbHandle *handle)
     return ret;
 }
 
-int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
+frame_brightness_params_t aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
 {
     vx_status status = VX_FAILURE;
     vx_map_id h3a_buf_map_id;
     vx_map_id aewb_buf_map_id;
     tivx_h3a_data_t *h3a_ptr = NULL;
     tivx_ae_awb_params_t *aewb_ptr = NULL;
+    frame_brightness_params_t ret_params;
 
     vxMapUserDataObject ((vx_user_data_object)h3a_buf->handle, 0,
             sizeof (tivx_h3a_data_t), &h3a_buf_map_id, (void **) &h3a_ptr,
@@ -881,15 +882,16 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
         &handle->sensor_out_data,
         &handle->aewb_config,
         h3a_ptr,
-        aewb_ptr
+        aewb_ptr,
+        &ret_params
     );
 
     vxUnmapUserDataObject ((vx_user_data_object)h3a_buf->handle, h3a_buf_map_id);
     vxUnmapUserDataObject ((vx_user_data_object)aewb_buf->handle, aewb_buf_map_id);
 
     status = aewb_write_to_sensor(handle);
-
-    return status;
+    
+    return ret_params;
 }
 
 int aewb_delete_handle(AewbHandle *handle)

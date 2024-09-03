@@ -119,6 +119,15 @@ typedef struct _GraphObj    GraphObj;
 typedef struct _Buf         Buf;
 typedef struct _BufPool     BufPool;
 
+
+typedef struct {
+    int32_t analog_gain; // units??
+    int32_t digital_gain; // units??
+    int32_t exposure_time; // units??
+    int32_t avg_brightness; // units??
+} frame_brightness_params_t;
+
+
 /*!
  * \brief Structure describing a Buffer object.
  */

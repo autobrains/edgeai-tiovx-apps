@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include "aewb_logger_types.h"
+#include "tiovx_modules_types.h"
 #include "aewb_logger_sender_types.h"
 
 #ifdef __cplusplus
@@ -35,7 +36,8 @@ int32_t aewb_logger_send_log(
     sensor_config_set *sensor_out_data,
     tivx_aewb_config_t *aewb_config,
     tivx_h3a_data_t *h3a_data,
-    tivx_ae_awb_params_t *ae_awb_result);
+    tivx_ae_awb_params_t *ae_awb_result,
+    frame_brightness_params_t *avg_brightness);
 
 
 #ifdef __cplusplus
