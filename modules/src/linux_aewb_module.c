@@ -851,43 +851,44 @@ int aewb_write_to_sensor(AewbHandle *handle)
     return ret;
 }
 
-int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf) {
+int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
+{
     vx_status status = VX_FAILURE;
     vx_map_id h3a_buf_map_id;
     vx_map_id aewb_buf_map_id;
     tivx_h3a_data_t *h3a_ptr = NULL;
     tivx_ae_awb_params_t *aewb_ptr = NULL;
-    
-    vxMapUserDataObject((vx_user_data_object) h3a_buf->handle, 0,
-                        sizeof(tivx_h3a_data_t), &h3a_buf_map_id, (void **) &h3a_ptr,
-                        VX_READ_ONLY, VX_MEMORY_TYPE_HOST, 0);
-    vxMapUserDataObject((vx_user_data_object) aewb_buf->handle, 0,
-                        sizeof(tivx_ae_awb_params_t), &aewb_buf_map_id,
-                        (void **) &aewb_ptr, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, 0);
-    
+
+    vxMapUserDataObject ((vx_user_data_object)h3a_buf->handle, 0,
+            sizeof (tivx_h3a_data_t), &h3a_buf_map_id, (void **) &h3a_ptr,
+            VX_READ_ONLY, VX_MEMORY_TYPE_HOST, 0);
+    vxMapUserDataObject ((vx_user_data_object)aewb_buf->handle, 0,
+            sizeof (tivx_ae_awb_params_t), &aewb_buf_map_id,
+            (void **)&aewb_ptr, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, 0);
+
     status = TI_2A_wrapper_process(&handle->ti_2a_wrapper, &handle->aewb_config,
-                                   h3a_ptr, &handle->sensor_in_data, aewb_ptr,
-                                   &handle->sensor_out_data);
-    
+            h3a_ptr, &handle->sensor_in_data, aewb_ptr,
+            &handle->sensor_out_data);
+
     if (status) {
         TIOVX_MODULE_ERROR("[AEWB] Process call failed: %d", status);
     }
-    
+
     aewb_logger_send_log(
-            aewb_logger_sender_state_ptr,
-            &handle->ti_2a_wrapper,
-            &handle->sensor_in_data,
-            &handle->sensor_out_data,
-            &handle->aewb_config,
-            h3a_ptr,
-            aewb_ptr
+        aewb_logger_sender_state_ptr,
+        &handle->ti_2a_wrapper,
+        &handle->sensor_in_data,
+        &handle->sensor_out_data,
+        &handle->aewb_config,
+        h3a_ptr,
+        aewb_ptr
     );
-    
-    vxUnmapUserDataObject((vx_user_data_object) h3a_buf->handle, h3a_buf_map_id);
-    vxUnmapUserDataObject((vx_user_data_object) aewb_buf->handle, aewb_buf_map_id);
-    
+
+    vxUnmapUserDataObject ((vx_user_data_object)h3a_buf->handle, h3a_buf_map_id);
+    vxUnmapUserDataObject ((vx_user_data_object)aewb_buf->handle, aewb_buf_map_id);
+
     status = aewb_write_to_sensor(handle);
-    
+
     return status;
 }
 
