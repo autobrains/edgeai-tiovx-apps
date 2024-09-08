@@ -892,9 +892,9 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
     return status;
 }
 
-ti_2a_wrapper *aewb_get_ti_2a_wrapper(AewbHandle *handle)
+void *aewb_get_ti_2a_wrapper(AewbHandle *handle)
 {
-    return handle->ti_2a_wrapper;
+    return &handle->ti_2a_wrapper;
 }
 
 int aewb_delete_handle(AewbHandle *handle)

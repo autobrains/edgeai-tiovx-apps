@@ -121,10 +121,17 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg);
  */
 int aewb_process(AewbHandle *handle, Buf *h3a_stats, Buf *aewb_result);
 
+/*! \brief Getter function for 2A params.
+ * \param [in] aewb handle \ref AewbHandle.
+ * \ingroup tiovx_modules
+ */
+void *aewb_get_ti_2a_wrapper(AewbHandle *handle);
+
 /*! \brief Function to free a aewb handle.
  * \param [in] aewb handle \ref AewbHandle.
  * \ingroup tiovx_modules
  */
+ 
 int aewb_delete_handle(AewbHandle *handle);
 
 #ifdef __cplusplus
