@@ -131,7 +131,6 @@ void *aewb_get_ti_2a_wrapper(AewbHandle *handle);
  * \param [in] aewb handle \ref AewbHandle.
  * \ingroup tiovx_modules
  */
- 
 int aewb_delete_handle(AewbHandle *handle);
 
 #ifdef __cplusplus
