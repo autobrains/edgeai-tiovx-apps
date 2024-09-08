@@ -119,7 +119,7 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg);
  * \param [out] aewb_result for viss in.
  * \ingroup tiovx_modules
  */
-frame_brightness_params_t aewb_process(AewbHandle *handle, Buf *h3a_stats, Buf *aewb_result);
+int aewb_process(AewbHandle *handle, Buf *h3a_stats, Buf *aewb_result);
 
 /*! \brief Function to free a aewb handle.
  * \param [in] aewb handle \ref AewbHandle.
