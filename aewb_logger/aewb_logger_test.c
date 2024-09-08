@@ -88,7 +88,6 @@ void test_send_recv_log()
 
     aewb_logger_sender_state_t *sender = aewb_logger_create_sender("192.168.5.3", 4321);
     aewb_logger_receiver_state_t *receiver = aewb_logger_create_receiver("192.168.5.3", 4321);
-    frame_brightness_params_t avg_brightness;
 
     int32_t n_written = aewb_logger_send_log(
         sender,
@@ -97,8 +96,7 @@ void test_send_recv_log()
         sender_args.sensor_out_data,
         sender_args.aewb_config,
         sender_args.h3a_data,
-        sender_args.ae_awb_result,
-        &avg_brightness
+        sender_args.ae_awb_result
     );
 
     int32_t n_read = aewb_logger_recv_log(receiver);
