@@ -875,7 +875,7 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
     }
 
     aewb_logger_send_log(
-        aewb_logger_sender_state_ptr, 
+        aewb_logger_sender_state_ptr,
         &handle->ti_2a_wrapper,
         &handle->sensor_in_data,
         &handle->sensor_out_data,
@@ -890,6 +890,11 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
     status = aewb_write_to_sensor(handle);
 
     return status;
+}
+
+void *aewb_get_ti_2a_wrapper(AewbHandle *handle)
+{
+    return &handle->ti_2a_wrapper;
 }
 
 int aewb_delete_handle(AewbHandle *handle)
