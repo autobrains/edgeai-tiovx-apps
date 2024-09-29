@@ -82,7 +82,7 @@ vx_status tiovx_viss_module_configure_params(NodeObj *node)
 
     node_cfg->viss_params.sensor_dcc_id       = node_priv->sensor_obj.sensorParams.dccId;
     node_cfg->viss_params.use_case            = 0;
-    node_cfg->viss_params.fcp[0].ee_mode      = TIVX_VPAC_VISS_EE_MODE_OFF;
+    node_cfg->viss_params.fcp[0].ee_mode      = TIVX_VPAC_VISS_EE_MODE_Y8;
     node_cfg->viss_params.fcp[0].chroma_mode  = TIVX_VPAC_VISS_CHROMA_MODE_420;
 
     if(node_cfg->output_select[0] == TIOVX_VISS_MODULE_OUTPUT_EN)

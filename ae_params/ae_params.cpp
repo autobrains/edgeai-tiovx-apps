@@ -88,7 +88,12 @@ template<> struct convert<ae_params_t> {
             range_index += 1;
         }
 
-        rhs.cur_y_from_cc_pixels = node["cur_y_from_cc_pixels"].as<uint8_t>();
+        if (node["cur_y_from_cc_pixels"]) {
+            rhs.cur_y_from_cc_pixels = node["cur_y_from_cc_pixels"].as<uint8_t>();
+        }
+        else {
+            rhs.cur_y_from_cc_pixels = 0;
+        }
         
         return ret;
     } //struct convert<ae_params_t>
@@ -100,6 +105,7 @@ std::string ae_params_get_path() {
     const char *path1 = std::getenv("AE_PARAMS_PATH");
     std::string path2 = "./ae_params.yaml";
     std::string path3 = "/home/root/app/imx728/dcc_3856x2176/ae_params.yaml";
+    std::string path4 = "/home/root/autobrains/imx728/dcc_3856x2176/ae_params.yaml";
 
     if (path1!=NULL and fs::exists(path1)) {
         return path1;
@@ -112,6 +118,10 @@ std::string ae_params_get_path() {
     if (fs::exists(path3)) {
         return path3;
     }
+
+    if (fs::exists(path4)) {
+        return path4;
+    }    
 
     return "";
 }

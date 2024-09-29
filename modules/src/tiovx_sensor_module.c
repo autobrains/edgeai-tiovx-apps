@@ -73,7 +73,7 @@ vx_status tiovx_init_sensor_obj(SensorObj *sensorObj, char *objName)
     sensorObj->sensor_dcc_enabled=1;
     sensorObj->sensor_exp_control_enabled=0;
     sensorObj->sensor_gain_control_enabled=0;
-    sensorObj->sensor_wdr_enabled=0;
+    sensorObj->sensor_wdr_enabled=1;
     sensorObj->num_cameras_enabled=1;
     sensorObj->ch_mask=1;
     sensorObj->starting_channel=0;
