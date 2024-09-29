@@ -105,6 +105,7 @@ include_directories(${PROJECT_SOURCE_DIR}
                     ${PSDK_INCLUDE_PATH}/processor_sdk/imaging/algos/ae/include
                     ${PSDK_INCLUDE_PATH}/processor_sdk/imaging/algos/awb/include
                     ${PSDK_INCLUDE_PATH}/processor_sdk/imaging/algos/dcc/include
+                    ${PSDK_INCLUDE_PATH}/processor_sdk/imaging/algos/ae/include
                     ${PSDK_INCLUDE_PATH}/processor_sdk/imaging/sensor_drv/include
                     ${PSDK_INCLUDE_PATH}/processor_sdk/imaging/ti_2a_wrapper/include
                     ${PSDK_INCLUDE_PATH}/processor_sdk/imaging/kernels/include
