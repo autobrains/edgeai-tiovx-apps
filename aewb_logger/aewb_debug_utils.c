@@ -17,11 +17,11 @@ typedef struct {
 } h3a_win8_t;
 
 
-time_t t0 = 0;
+time_t aewb_debug_periodic_change_t0 = 0;
 int gain_i = 0;
 void aewb_debug_periodic_change(tiae_prm_t *h)
 {
-    if (time(NULL)-t0<5) {
+    if (time(NULL)-aewb_debug_periodic_change_t0<5) {
         return;
     }
 
@@ -51,7 +51,7 @@ void aewb_debug_periodic_change(tiae_prm_t *h)
 
     h->exposure_program.analog_gain_range[0].max = 1024*pow(1.2,gain_i);       
 
-    t0 = time(NULL);
+    aewb_debug_periodic_change_t0 = time(NULL);
     gain_i += 1;
     printf("------------------ gain_i=%d, max=%d\n", gain_i, h->exposure_program.analog_gain_range[0].max);
 }
@@ -79,5 +79,38 @@ void dump_sample(tivx_h3a_data_t *h3a_ptr) {
     printf("unsaturated_count % 8d % 8d % 8d % 8d\n",   win_8_x->unsaturated_count[0], win_8_x->unsaturated_count[1], win_8_x->unsaturated_count[2], win_8_x->unsaturated_count[3]);    
 
 }
+
+time_t periodic_analog_gain_change_t0 = 0;
+int exposure_idx = 0;
+void periodic_analog_gain_change(sensor_config_set *sensor_out_data, tivx_ae_awb_params_t *aewb_ptr ) 
+{
+    time_t t1 = time(NULL);
+    if (periodic_analog_gain_change_t0==0) {
+        periodic_analog_gain_change_t0 = t1;
+    }
+
+    int elapsed = t1-periodic_analog_gain_change_t0;
+    if (elapsed>5) {
+        exposure_idx +=1;
+        exposure_idx %= 3;
+        periodic_analog_gain_change_t0 = t1;
+    }
+
+    int x;
+    if (exposure_idx==0) {
+        x = 1024;
+    }
+    else if (exposure_idx==1) {
+        x = 30000;
+    }
+    else if (exposure_idx==2) {
+        x = 300000;
+    }    
+
+    aewb_ptr->analog_gain = x;
+    sensor_out_data->aePrms.analogGain[0] = x;
+
+}
+
 
 
