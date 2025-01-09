@@ -84,6 +84,8 @@
 #define APP_MODULES_TEST_LINUX_CAPTURE_DISPLAY (0)
 #define APP_MODULES_TEST_LINUX_DECODE_DISPLAY (0)
 #define APP_MODULES_TEST_LINUX_CAPTURE_ENCODE (0)
+#define APP_MODULES_TEST_LINUX_MULTI_CAPTURE_DISPLAY (0)
+#define APP_MODULES_TEST_LINUX_RGB_IR_DISPLAY (0)
 #define APP_MODULES_TEST_CAPTURE_VISS_LDC_MSC_DISPLAY (0)
 #define APP_MODULES_TEST_CAPTURE_DL_DISPLAY (0)
 #define APP_MODULES_TEST_PYRAMID (1)
@@ -91,12 +93,23 @@
 #define APP_MODULES_TEST_DOF (1)
 #define APP_MODULES_TEST_LINUX_CAPTURE_DOF (0)
 #define APP_MODULES_TEST_LINUX_DECODE_SDE (0)
+#define APP_MODULES_TEST_PIXELWISE_MULTIPLY (1)
+#define APP_MODULES_TEST_PIXELWISE_ADD (1)
+#define APP_MODULES_TEST_LUT (1)
+#define APP_MODULES_TEST_FAKESRC_FAKESINK (1)
+#define APP_MODULES_TEST_QNX_DECODE_DISPLAY (0)
+#define APP_MODULES_TEST_QNX_CAPTURE_ENCODE (0)
+#define APP_MODULES_TEST_LINUX_MULTI_GRAPH (0)
 
 char *EDGEAI_DATA_PATH;
 
 int main(int argc, char *argv[])
 {
     int status = 0;
+
+#if defined(TARGET_OS_QNX)
+    setenv("EDGEAI_DATA_PATH", "/ti_fs/edgeai/edgeai-test-data/", 1);
+#endif
 
     EDGEAI_DATA_PATH = getenv("EDGEAI_DATA_PATH");
     if (EDGEAI_DATA_PATH == NULL)
@@ -229,6 +242,15 @@ int main(int argc, char *argv[])
         status = app_modules_linux_capture_display_test(argc, argv);
     }
 #endif
+#if (APP_MODULES_TEST_LINUX_MULTI_GRAPH)
+    if(status==0)
+    {
+        printf("Running linux multi graph test\n");
+        int app_modules_linux_multi_graph_test(int argc, char* argv[]);
+
+        status = app_modules_linux_multi_graph_test(argc, argv);
+    }
+#endif
 #if (APP_MODULES_TEST_LINUX_DECODE_DISPLAY)
     if(status==0)
     {
@@ -247,6 +269,24 @@ int main(int argc, char *argv[])
         status = app_modules_linux_capture_encode_test(argc, argv);
     }
 #endif
+#if (APP_MODULES_TEST_LINUX_MULTI_CAPTURE_DISPLAY)
+    if(status==0)
+    {
+        printf("Running linux multi capture display test\n");
+        int app_modules_linux_multi_capture_display_test(int argc, char* argv[]);
+
+        status = app_modules_linux_multi_capture_display_test(argc, argv);
+    }
+#endif
+#if (APP_MODULES_TEST_LINUX_RGB_IR_DISPLAY)
+    if(status==0)
+    {
+        printf("Running linux rgb ir display test\n");
+        int app_modules_linux_rgb_ir_display_test(int argc, char* argv[]);
+
+        status = app_modules_linux_rgb_ir_display_test(argc, argv);
+    }
+#endif
 #if (APP_MODULES_TEST_PYRAMID)
     if(status==0)
     {
@@ -257,7 +297,47 @@ int main(int argc, char *argv[])
     }
 #endif
 
-#if defined(SOC_J721E) || defined(SOC_J721S2) || defined(SOC_J784S4) || defined(SOC_J722S)
+#if (APP_MODULES_TEST_PIXELWISE_MULTIPLY)
+    if(status==0)
+    {
+        printf("Running Pixelwise Multiply module test\n");
+        int app_modules_pixelwise_multiply_test(int argc, char* argv[]);
+
+        status = app_modules_pixelwise_multiply_test(argc, argv);
+    }
+#endif
+
+#if (APP_MODULES_TEST_PIXELWISE_ADD)
+    if(status==0)
+    {
+        printf("Running Pixelwise Add module test\n");
+        int app_modules_pixelwise_add_test(int argc, char* argv[]);
+
+        status = app_modules_pixelwise_add_test(argc, argv);
+    }
+#endif
+
+#if (APP_MODULES_TEST_LUT)
+    if(status==0)
+    {
+        printf("Running LUT module test\n");
+        int app_modules_lut_test(int argc, char* argv[]);
+
+        status = app_modules_lut_test(argc, argv);
+    }
+#endif
+
+#if (APP_MODULES_TEST_FAKESRC_FAKESINK)
+    if(status==0)
+    {
+        printf("Running fakesrc fakesink module test\n");
+        int app_modules_fakesrc_fakesink_test(int argc, char* argv[]);
+
+        status = app_modules_fakesrc_fakesink_test(argc, argv);
+    }
+#endif
+
+#if defined(SOC_J721E) || defined(SOC_J721S2) || defined(SOC_J784S4) || defined(SOC_J722S) || defined(SOC_J742S2)
 #if (APP_MODULES_TEST_DL_PIPELINE)
     if(status==0)
     {
@@ -338,6 +418,26 @@ int main(int argc, char *argv[])
 
         status = app_modules_linux_decode_sde_test(argc, argv);
     }
+#endif
+#if defined(TARGET_OS_QNX)
+#if (APP_MODULES_TEST_QNX_DECODE_DISPLAY)
+    if(status==0)
+    {
+        printf("Running QNX decode display module test\n");
+        int app_modules_qnx_decode_display_test(int argc, char* argv[]);
+
+        status = app_modules_qnx_decode_display_test(argc, argv);
+    }
+#endif
+#if (APP_MODULES_TEST_QNX_CAPTURE_ENCODE)
+    if(status==0)
+    {
+        printf("Running QNX capture encode module test\n");
+        int app_modules_qnx_capture_encode_test(int argc, char* argv[]);
+
+        status = app_modules_qnx_capture_encode_test(argc, argv);
+    }
+#endif
 #endif
 #endif
 

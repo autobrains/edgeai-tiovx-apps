@@ -78,11 +78,12 @@
 #define V4L2_CAPTURE_DEFAULT_DEVICE "/dev/video-imx219-cam0"
 #define V4L2_CAPTURE_DEFAULT_BUFQ_DEPTH 4
 #define V4L2_CAPTURE_MAX_BUFQ_DEPTH 8
-#define V4L2_CAPTURE_TIMEOUT 100
+#define V4L2_CAPTURE_TIMEOUT 200
 #define V4L2_CAPTURE_STREAMON_DELAY 2 // in sec
 
 void v4l2_capture_init_cfg(v4l2CaptureCfg *cfg)
 {
+    CLR(cfg);
     cfg->width = V4L2_CAPTURE_DEFAULT_WIDTH;
     cfg->height = V4L2_CAPTURE_DEFAULT_HEIGHT;
     cfg->pix_format = V4L2_CAPTURE_DEFAULT_PIX_FMT;
@@ -306,12 +307,6 @@ Buf *v4l2_capture_dqueue_buf(v4l2CaptureHandle *handle)
     }
 
     handle->queued[buf.index] = false;
-
-    if (buf.flags & V4L2_BUF_FLAG_ERROR) {
-        v4l2_capture_enqueue_buf(handle, handle->bufq[buf.index]);
-        goto ret;
-    }
-
     tiovx_buffer = handle->bufq[buf.index];
 
 ret:

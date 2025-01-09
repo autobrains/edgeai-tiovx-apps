@@ -75,6 +75,7 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 #ifdef TIOVX_MODULE_DEBUG
 #define TIOVX_MODULE_PRINTF(f_, ...) printf("[TIOVX_MODULES][DEBUG] %d: %s: "f_, __LINE__, __func__, ##__VA_ARGS__)
@@ -104,6 +105,14 @@ extern "C" {
 #define TIOVX_MODULES_DEFAULT_BUFQ_DEPTH      (2u)
 #define TIOVX_MODULES_DEFAULT_NUM_CHANNELS    (1u)
 #define TIOVX_MODULES_MAX_REF_HANDLES     (16u)
+
+#if defined(TARGET_OS_QNX)
+#define TIOVX_MODULES_DATA_PATH "/ti_fs/edgeai/edgeai-test-data/"
+#define TIOVX_MODULES_IMAGING_PATH "/ti_fs/edgeai/imaging/"
+#else
+#define TIOVX_MODULES_DATA_PATH "/opt/edgeai-test-data/"
+#define TIOVX_MODULES_IMAGING_PATH "/opt/imaging/"
+#endif
 
 /*!
  * \brief Enum for pad directions.
@@ -172,6 +181,9 @@ struct _BufPool {
 
     /*! \brief Mutex for queue management */
     pthread_mutex_t     lock;
+
+    /*! \brief Semaphore for acquire and release */
+    sem_t               sem;
 };
 
 /*!

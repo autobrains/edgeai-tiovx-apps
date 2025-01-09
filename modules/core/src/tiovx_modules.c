@@ -146,6 +146,7 @@ Buf* tiovx_modules_acquire_buf(BufPool *buf_pool)
 {
     Buf *buf = NULL;
 
+    sem_wait(&buf_pool->sem);
     LOCK(buf_pool);
 
     if (!buf_pool->free_count) {
@@ -171,6 +172,7 @@ vx_status tiovx_modules_release_buf(Buf *buf)
     buf->pool->free_count++;
 
     UNLOCK(buf->pool);
+    sem_post(&buf->pool->sem);
 
     status = VX_SUCCESS;
 
@@ -207,6 +209,73 @@ vx_status tiovx_modules_reference_alloc_mem(vx_reference ref)
     return status;
 }
 
+vx_status tiovx_modules_reference_swap_mem(vx_reference ref1, vx_reference ref2)
+{
+    vx_status status = VX_FAILURE;
+    void *addr1[TIOVX_MODULES_MAX_REF_HANDLES] = {NULL};
+    void *addr2[TIOVX_MODULES_MAX_REF_HANDLES] = {NULL};
+    vx_uint32 size1[TIOVX_MODULES_MAX_REF_HANDLES], num_entries1;
+    vx_uint32 size2[TIOVX_MODULES_MAX_REF_HANDLES], num_entries2;
+
+    status = tivxReferenceExportHandle(ref1, addr1, size1,
+                                       TIOVX_MODULES_MAX_REF_HANDLES,
+                                       &num_entries1);
+    if(status != VX_SUCCESS)
+    {
+        TIOVX_MODULE_ERROR("Error exporting handles for ref1\n");
+        return status;
+    }
+
+    status = tivxReferenceExportHandle(ref2, addr2, size2,
+                                       TIOVX_MODULES_MAX_REF_HANDLES,
+                                       &num_entries2);
+    if(status != VX_SUCCESS)
+    {
+        TIOVX_MODULE_ERROR("Error exporting handles for ref2\n");
+        return status;
+    }
+
+    status = tivxReferenceImportHandle(ref1, (const void **)addr2,
+                                       size2, num_entries2);
+    if(status != VX_SUCCESS)
+    {
+        TIOVX_MODULE_ERROR("Error importing handles for ref1\n");
+    }
+
+    status = tivxReferenceImportHandle(ref2, (const void **)addr1,
+                                       size1, num_entries1);
+    if(status != VX_SUCCESS)
+    {
+        TIOVX_MODULE_ERROR("Error importing handles for ref2\n");
+    }
+
+    return status;
+}
+
+vx_status tiovx_modules_buf_swap_mem(Buf *buf1, Buf *buf2)
+{
+    vx_status status = VX_FAILURE;
+
+    if (buf1->pool->pad->num_channels != buf2->pool->pad->num_channels) {
+        TIOVX_MODULE_ERROR("Num channels do not match\n");
+    }
+
+    for (uint8_t i=0; i < buf1->pool->pad->num_channels; i++) {
+        vx_reference ref1 = vxGetObjectArrayItem(buf1->arr, i);
+        vx_reference ref2 = vxGetObjectArrayItem(buf2->arr, i);
+        status = tiovx_modules_reference_swap_mem(ref1, ref2);
+        if(status != VX_SUCCESS)
+        {
+            TIOVX_MODULE_ERROR("Failed with staus %d\n", status);
+            return status;
+        }
+        vxReleaseReference(&ref1);
+        vxReleaseReference(&ref2);
+    }
+
+    return status;
+}
+
 BufPool* tiovx_modules_allocate_bufpool(Pad *pad)
 {
     vx_status status = VX_FAILURE;
@@ -218,6 +287,7 @@ BufPool* tiovx_modules_allocate_bufpool(Pad *pad)
     buf_pool->enqueue_head = 0;
     buf_pool->enqueue_tail = 0;
     pthread_mutex_init(&buf_pool->lock, NULL);
+    sem_init(&buf_pool->sem, 0, 0);
 
     for(uint8_t i = 0; i < pad->bufq_depth ; i++)
     {
@@ -827,6 +897,10 @@ Buf* tiovx_modules_dequeue_buf(BufPool *buf_pool)
     vx_object_array ref = NULL;
     vx_uint32 num_refs = 0;
 
+    vxGraphParameterDequeueDoneRef(graph->tiovx_graph,
+                                   pad->graph_parameter_index,
+                                   (vx_reference *)&ref, 1, &num_refs);
+
     LOCK(buf_pool);
 
     if (buf_pool->enqueue_tail == buf_pool->enqueue_head) {
@@ -839,10 +913,6 @@ Buf* tiovx_modules_dequeue_buf(BufPool *buf_pool)
                                                     (buf_pool->bufq_depth + 1);
 
     UNLOCK(buf_pool);
-
-    vxGraphParameterDequeueDoneRef(graph->tiovx_graph,
-                                   pad->graph_parameter_index,
-                                   (vx_reference *)&ref, 1, &num_refs);
 
     return buf;
 }

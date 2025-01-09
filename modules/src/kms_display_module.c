@@ -71,23 +71,18 @@
 #include <stdint.h>
 #include <errno.h>
 #include <unistd.h>
+#include <poll.h>
 
 #define KMS_DISPLAY_DEFAULT_WIDTH 1920
 #define KMS_DISPLAY_DEFAULT_HEIGHT 1080
 #define KMS_DISPLAY_DEFAULT_PIX_FMT DRM_FORMAT_NV12
 
-#if defined(SOC_AM62A)
+#if defined(SOC_AM62A) || defined(SOC_J722S) || defined(SOC_J721S2)
     #define KMS_DISPLAY_DEFAULT_CRTC 38
     #define KMS_DISPLAY_DEFAULT_CONNECTOR 40
-#elif defined(SOC_J722S)
-    #define KMS_DISPLAY_DEFAULT_CRTC 38
-    #define KMS_DISPLAY_DEFAULT_CONNECTOR 40
-#elif defined(SOC_J784S4)
+#elif defined(SOC_J784S4) || defined(SOC_J742S2)
     #define KMS_DISPLAY_DEFAULT_CRTC 48
     #define KMS_DISPLAY_DEFAULT_CONNECTOR 50
-#elif defined(SOC_J721S2)
-    #define KMS_DISPLAY_DEFAULT_CRTC 38
-    #define KMS_DISPLAY_DEFAULT_CONNECTOR 40
 #elif defined(SOC_J721E)
     #define KMS_DISPLAY_DEFAULT_CRTC 48
     #define KMS_DISPLAY_DEFAULT_CONNECTOR 50
@@ -95,9 +90,11 @@
 
 #define KMS_DISPLAY_DEFAULT_BUFQ_DEPTH 4
 #define KMS_DISPLAY_MAX_BUFQ_DEPTH 8
+#define KMS_DISPLAY_PAGE_FLIP_TIMEOUT 50
 
 void kms_display_init_cfg(kmsDisplayCfg *cfg)
 {
+    CLR(cfg);
     cfg->width = KMS_DISPLAY_DEFAULT_WIDTH;
     cfg->height = KMS_DISPLAY_DEFAULT_HEIGHT;
     cfg->pix_format = KMS_DISPLAY_DEFAULT_PIX_FMT;
@@ -144,6 +141,7 @@ int kms_display_register_buf(kmsDisplayHandle *handle, Buf *tiovx_buffer)
     int fd[4];
     long unsigned int size[4];
     unsigned int offset[4];
+    static int modeset_done = 0;
 
     if (tiovx_buffer->buf_index >= KMS_DISPLAY_MAX_BUFQ_DEPTH) {
         TIOVX_MODULE_ERROR("[KMS_DISPLAY] Registering buf failed, buf index: %d"
@@ -160,16 +158,53 @@ int kms_display_register_buf(kmsDisplayHandle *handle, Buf *tiovx_buffer)
     drmModeAddFB2(handle->fd, handle->cfg.width, handle->cfg.height,
             handle->cfg.pix_format, gem_handle, pitch, offset,
             &handle->fbs[tiovx_buffer->buf_index], 0);
+
+    if (modeset_done == 0) {
+        drmModeSetCrtc(handle->fd, handle->cfg.crtc,
+                handle->fbs[tiovx_buffer->buf_index], 0, 0,
+                &handle->cfg.connector, 1, &handle->crtc_info->mode);
+        modeset_done = 1;
+    }
 ret:
     return status;
 }
 
+void page_flip_handler(int fd, uint32_t dequence, uint32_t tv_sec,
+                        uint32_t tv_usec, void *user_data)
+{
+    *((int *)user_data) = 1;
+}
+
+drmEventContext drm_event = {
+    .version = DRM_EVENT_CONTEXT_VERSION,
+    .page_flip_handler = page_flip_handler,
+};
+
 int kms_display_render_buf(kmsDisplayHandle *handle, Buf *tiovx_buffer)
 {
     int status = 0;
-    drmModeSetCrtc(handle->fd, handle->cfg.crtc,
-            handle->fbs[tiovx_buffer->buf_index], 0, 0,
-            &handle->cfg.connector, 1, &handle->crtc_info->mode);
+    struct pollfd pfd;
+    int page_flip_done = 0;
+    static int first_frame = 1;
+
+    if (first_frame == 1) {
+        first_frame = 0;
+    } else {
+        CLR(&pfd);
+        pfd.fd = handle->fd;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+
+        while (page_flip_done == 0) {
+            poll(&pfd, 1, KMS_DISPLAY_PAGE_FLIP_TIMEOUT);
+            status = drmHandleEvent(handle->fd, &drm_event);
+        }
+    }
+
+    drmModePageFlip(handle->fd, handle->cfg.crtc,
+            handle->fbs[tiovx_buffer->buf_index], DRM_MODE_PAGE_FLIP_EVENT,
+            &page_flip_done);
+
     return status;
 }
 

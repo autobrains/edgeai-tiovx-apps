@@ -67,6 +67,7 @@ typedef struct {
 
 void tiovx_delay_init_cfg(TIOVXDelayNodeCfg *node_cfg)
 {
+    CLR(node_cfg);
     node_cfg->src_pad = NULL;
     node_cfg->sink_pad = NULL;
     node_cfg->delay = 2;
@@ -77,6 +78,8 @@ vx_status tiovx_delay_init_node(NodeObj *node)
     vx_status status = VX_FAILURE;
     TIOVXDelayNodeCfg *node_cfg = (TIOVXDelayNodeCfg *)node->node_cfg;
     TIOVXDelayNodePriv *node_priv = (TIOVXDelayNodePriv *)node->node_priv;
+
+    CLR(node_priv);
 
     node_priv->delay_obj = vxCreateDelay(
                                   node->graph->tiovx_context,

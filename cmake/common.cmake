@@ -50,6 +50,10 @@ elseif ("${TARGET_SOC_LOWER}" STREQUAL "j784s4")
     set(TARGET_PLATFORM     J7)
     set(TARGET_CPU          A72)
     set(TARGET_SOC          J784S4)
+elseif ("${TARGET_SOC_LOWER}" STREQUAL "j742s2")
+    set(TARGET_PLATFORM     J7)
+    set(TARGET_CPU          A72)
+    set(TARGET_SOC          J742S2)
 elseif ("${TARGET_SOC_LOWER}" STREQUAL "j722s")
     set(TARGET_PLATFORM     J7)
     set(TARGET_CPU          A53)
@@ -62,7 +66,13 @@ else()
     message(FATAL_ERROR "SOC ${TARGET_SOC_LOWER} is not supported.")
 endif()
 
+set(TARGET_CPU_TEMP $ENV{TARGET_CPU})
+if(NOT ("${TARGET_CPU_TEMP}" STREQUAL ""))
+    set(TARGET_CPU ${TARGET_CPU_TEMP})
+endif()
+
 message("SOC=${TARGET_SOC_LOWER}")
+message("TARGET_CPU=${TARGET_CPU}")
 
 add_definitions(
     -DTARGET_CPU_${TARGET_CPU}
@@ -80,6 +90,12 @@ link_directories(${TARGET_FS}/usr/lib/aarch64-linux
                  ${EDGEAI_LIBS_PATH}
                  )
 
+if ("${TARGET_OS}" STREQUAL "QNX")
+    link_directories(${PSDK_QNX_PATH}/qnx/codec/vpu/OpenMAXIL/core/nto/aarch64/so.le/
+                     ${PSDK_QNX_PATH}/qnx/codec/vpu/OpenMAXIL/utility/nto/aarch64/so.le
+                    )
+endif()
+
 #message("PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}")
 #message("CMAKE_SOURCE_DIR   = ${CMAKE_SOURCE_DIR}")
 
@@ -92,6 +108,8 @@ set(EDGEAI_INCLUDE_PATH $ENV{EDGEAI_INCLUDE_PATH})
 if ("${EDGEAI_INCLUDE_PATH}" STREQUAL "")
     set(EDGEAI_INCLUDE_PATH ${TARGET_FS}/usr/include/)
 endif()
+
+set(PSDK_QNX_PATH $ENV{PSDK_QNX_PATH})
 
 include_directories(${PROJECT_SOURCE_DIR}
                     ${PROJECT_SOURCE_DIR}/modules/include
@@ -128,7 +146,14 @@ include_directories(${PROJECT_SOURCE_DIR}
                     ${EDGEAI_INCLUDE_PATH}/edgeai-tiovx-kernels
                     ${EDGEAI_INCLUDE_PATH}/edgeai-apps-utils/
                     ${EDGEAI_INCLUDE_PATH}/
+                    ${TARGET_FS}/usr/include/
                    )
+
+if ("${TARGET_OS}" STREQUAL "QNX")
+    include_directories(${PSDK_QNX_PATH}/qnx/codec/vpu/OpenMAXIL/khronos/openmaxil
+                        ${PSDK_QNX_PATH}/qnx/codec/vpu/OpenMAXIL/core/public/khronos/openmaxil
+                       )
+endif()
 
 set(SYSTEM_LINK_LIBS
     tivision_apps
@@ -136,15 +161,22 @@ set(SYSTEM_LINK_LIBS
     edgeai-apps-utils
     m
     yaml-cpp
+    avformat
+    avutil
+    avcodec
     )
 
 if ("${TARGET_OS}" STREQUAL "LINUX")
+if ("${TARGET_CPU}" STREQUAL "A72" OR "${TARGET_CPU}" STREQUAL "A53")
     list(APPEND
          SYSTEM_LINK_LIBS
          drm
-         avformat
-         avutil
-         avcodec)
+         )
+else()
+    list(APPEND
+         SYSTEM_LINK_LIBS
+         X11)
+endif()
 endif()
 
 if ("${TARGET_OS}" STREQUAL "QNX")
@@ -156,7 +188,10 @@ if ("${TARGET_OS}" STREQUAL "QNX")
          ti-udmalld
          ti-pdk
          ti-sciclient
-         c++fs)
+         c++
+         c++fs
+         omxcore_j7
+         omxil_j7_utility)
     add_definitions(
          -D_QNX_SOURCE
     )
@@ -174,6 +209,7 @@ set(COMMON_LINK_LIBS
 function(build_app app_name)
     add_executable(${app_name} ${ARGN})
     target_link_libraries(${app_name}
+                          -Wl,--unresolved-symbols=ignore-in-shared-libs
                           ${COMMON_LINK_LIBS}
                           ${TARGET_LINK_LIBS}
                           ${SYSTEM_LINK_LIBS}
@@ -225,7 +261,12 @@ function(build_lib lib_name lib_type lib_ver)
 
     set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
 
-    FILE(GLOB HDRS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
+    FILE(GLOB HDRS
+         ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
+         ${CMAKE_CURRENT_SOURCE_DIR}/core/include/*.h
+         ${CMAKE_CURRENT_SOURCE_DIR}/core/include/*.h
+         ${CMAKE_CURRENT_SOURCE_DIR}/../utils/include/*.h
+        )
 
     install(TARGETS ${lib_name}
             EXPORT ${lib_name}Targets

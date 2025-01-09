@@ -22,9 +22,15 @@ set(SRC_FILES
     src/tiovx_pyramid_module.c
     src/tiovx_delay_module.c
     src/tiovx_fakesink_module.c
+    src/tiovx_fakesrc_module.c
+    src/tiovx_pixelwise_multiply_module.c
+    src/tiovx_pixelwise_add_module.c
+    src/tiovx_lut_module.c
+    src/codec_input_demuxer.c
     )
 
 if ("${TARGET_OS}" STREQUAL "LINUX")
+if ("${TARGET_CPU}" STREQUAL "A72" OR "${TARGET_CPU}" STREQUAL "A53")
     list(APPEND
          SRC_FILES
          src/v4l2_capture_module.c
@@ -34,8 +40,18 @@ if ("${TARGET_OS}" STREQUAL "LINUX")
          src/linux_aewb_module.c
          )
 endif()
+endif()
 
-if ("${TARGET_SOC}" STREQUAL "J721E" OR "${TARGET_SOC}" STREQUAL "J721S2" OR "${TARGET_SOC}" STREQUAL "J784S4" OR "${TARGET_SOC}" STREQUAL "J722S")
+if ("${TARGET_OS}" STREQUAL "QNX")
+if ("${TARGET_CPU}" STREQUAL "A72" OR "${TARGET_CPU}" STREQUAL "A53")
+    list(APPEND
+         SRC_FILES
+         src/omx_encode_module.c
+         src/omx_decode_module.c)
+endif()
+endif()
+
+if ("${TARGET_SOC}" STREQUAL "J721E" OR "${TARGET_SOC}" STREQUAL "J721S2" OR "${TARGET_SOC}" STREQUAL "J742S2" OR "${TARGET_SOC}" STREQUAL "J784S4" OR "${TARGET_SOC}" STREQUAL "J722S")
     list(APPEND
          SRC_FILES
          src/tiovx_capture_module.c

@@ -162,25 +162,34 @@ void update_perf_overlay(vx_image image, EdgeAIPerfStats *perf_stats_handle)
     vx_map_id y_ptr_map_id;
     vx_map_id uv_ptr_map_id;
 
-    vxQueryImage(image, VX_IMAGE_WIDTH, &img_width, sizeof(vx_uint32));
-    vxQueryImage(image, VX_IMAGE_HEIGHT, &img_height, sizeof(vx_uint32));
+    if(NULL != image)
+    {
+        vxQueryImage(image, VX_IMAGE_WIDTH, &img_width, sizeof(vx_uint32));
+        vxQueryImage(image, VX_IMAGE_HEIGHT, &img_height, sizeof(vx_uint32));
 
-    y_ptr = map_image(image, 0, &y_ptr_map_id);
-    uv_ptr = map_image(image, 1, &uv_ptr_map_id);
+        y_ptr = map_image(image, 0, &y_ptr_map_id);
+        uv_ptr = map_image(image, 1, &uv_ptr_map_id);
 
-    perf_stats_handle->overlay.imgYPtr = (uint8_t *)y_ptr;
-    perf_stats_handle->overlay.imgUVPtr = (uint8_t *)uv_ptr;
-    perf_stats_handle->overlay.imgWidth = img_width;
-    perf_stats_handle->overlay.imgHeight = img_height;
-    perf_stats_handle->overlay.xPos = 0;
-    perf_stats_handle->overlay.yPos = 0;
-    perf_stats_handle->overlay.width = img_width;
-    perf_stats_handle->overlay.height = img_height;
+        perf_stats_handle->overlayType = OVERLAY_TYPE_GRAPH;
+        perf_stats_handle->overlay.imgYPtr = (uint8_t *)y_ptr;
+        perf_stats_handle->overlay.imgUVPtr = (uint8_t *)uv_ptr;
+        perf_stats_handle->overlay.imgWidth = img_width;
+        perf_stats_handle->overlay.imgHeight = img_height;
+        perf_stats_handle->overlay.xPos = 0;
+        perf_stats_handle->overlay.yPos = 0;
+        perf_stats_handle->overlay.width = img_width;
+        perf_stats_handle->overlay.height = img_height;
 
-    update_edgeai_perf_stats(perf_stats_handle);
+        update_edgeai_perf_stats(perf_stats_handle);
 
-    unmap_image(image, y_ptr_map_id);
-    unmap_image(image, uv_ptr_map_id);
+        unmap_image(image, y_ptr_map_id);
+        unmap_image(image, uv_ptr_map_id);
+    }
+    else
+    {
+        perf_stats_handle->overlayType = OVERLAY_TYPE_NONE;
+        update_edgeai_perf_stats(perf_stats_handle);
+    }
 }
 
 void print_perf(GraphObj *graph, EdgeAIPerfStats *perf_stats_handle)
@@ -194,10 +203,10 @@ void print_perf(GraphObj *graph, EdgeAIPerfStats *perf_stats_handle)
         printf ("CPU: mpu: TOTAL LOAD = %.2f\n",
                 (float)stats->cpu_load.cpu_load/100);
 
-#if defined(SOC_AM62A) || defined(SOC_J721E) || defined(SOC_J721S2) || defined(SOC_J784S4) || defined(SOC_J722S)
+#if defined(SOC_AM62A) || defined(SOC_J721E) || defined(SOC_J721S2) || defined(SOC_J784S4) || defined(SOC_J722S) || defined(SOC_J742S2)
         for (uint32_t i = 0; i < APP_IPC_CPU_MAX; i++)
         {
-            char *cpu_name = appIpcGetCpuName(i);
+            const char *cpu_name = appIpcGetCpuName(i);
             if (appIpcIsCpuEnabled (i) &&
                 (NULL != strstr (cpu_name, "c7x") ||
                 NULL != strstr (cpu_name, "mcu")))
@@ -271,5 +280,90 @@ void print_perf(GraphObj *graph, EdgeAIPerfStats *perf_stats_handle)
                     sizeof(graph_perf));
         printf("Graph - %0.3f ms\n", graph_perf.avg/1000000.0);
         printf("================================================\n\n");
+    }
+}
+
+void generate_datasheet(GraphObj *graph, EdgeAIPerfStats *perf_stats_handle)
+{
+
+    if(0 == perf_stats_handle->frameCount)
+    {
+        FILE *fptr;
+        const char* filename = "TIOVX_APP_demo";
+
+        fptr = fopen(filename, "w+");
+
+        if (fptr == NULL) {
+            printf("The file is not opened. The program will "
+                   "exit now");
+            exit(0);
+        }
+
+        Stats *stats = &perf_stats_handle->stats;
+
+        fprintf(fptr, "MPU Load (%%) = %.2f\n",
+                (float)stats->cpu_load.cpu_load/100);
+
+#if defined(SOC_AM62A) || defined(SOC_J721E) || defined(SOC_J721S2) || defined(SOC_J784S4) || defined(SOC_J722S)
+        int c7x_id = 0;
+        for (uint32_t i = 0; i < APP_IPC_CPU_MAX; i++)
+        {
+            const char *cpu_name = appIpcGetCpuName(i);
+            if (appIpcIsCpuEnabled (i) &&
+                (NULL != strstr (cpu_name, "c7x")))
+            {
+                fprintf(fptr, "C7x_%d Load (%%) = %.2f\n",
+                        c7x_id, (float)stats->cpu_loads[i].cpu_load/100);
+                c7x_id++;
+            }
+        }
+
+        for (uint32_t i = 0; i < stats->hwa_count ; i++)
+        {
+            app_perf_stats_hwa_load_t *hwaLoad;
+            uint64_t load;
+            for (uint32_t j = 0; j < APP_PERF_HWA_MAX; j++)
+            {
+                app_perf_hwa_id_t id = (app_perf_hwa_id_t) j;
+                hwaLoad = &stats->hwa_loads[i].hwa_stats[id];
+
+                if (hwaLoad->active_time > 0 &&
+                    hwaLoad->pixels_processed > 0 &&
+                    hwaLoad->total_time > 0)
+                {
+                    load = (hwaLoad->active_time * 10000) / hwaLoad->total_time;
+                    fprintf(fptr, "%6s Load (%%) = %.2f\n",
+                            appPerfStatsGetHwaName (id),
+                            (float)load/100);
+                }
+            }
+        }
+#endif
+        fprintf(fptr, "DDR Read BW (MB/s): %6d\n",
+                stats->ddr_load.read_bw_avg);
+
+        fprintf(fptr, "DDR Write BW (MB/s): %6d\n",
+                stats->ddr_load.write_bw_avg);
+
+        fprintf(fptr, "DDR Total BW (MB/s): %6d\n",
+                stats->ddr_load.read_bw_avg + stats->ddr_load.write_bw_avg);
+
+        fprintf(fptr, "FPS: %d\n", stats->fps);
+
+        for(uint32_t i = 0; i < graph->num_nodes; i++)
+        {
+            if(TIOVX_TIDL == graph->node_list[i].node_type)
+            {
+                vx_perf_t perf;
+                vxQueryNode(graph->node_list[i].tiovx_node,
+                            VX_NODE_PERFORMANCE,
+                            &perf,
+                            sizeof(perf));
+                fprintf(fptr, "Inference time (ms): %0.3f\n", perf.avg/1000000.0);
+            }
+        }
+
+        fprintf(fptr,"\n");
+        fclose(fptr);
     }
 }

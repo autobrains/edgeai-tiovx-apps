@@ -69,7 +69,7 @@
 #define LDC_BLOCK_HEIGHT    (32)
 #define LDC_PIXEL_PAD       (1)
 
-#if defined(SOC_J784S4)
+#if defined(SOC_J784S4) || defined(SOC_J742S2)
 static char *g_capture_targets[] = {TIVX_TARGET_CAPTURE1, TIVX_TARGET_CAPTURE2,
                                     TIVX_TARGET_CAPTURE3, TIVX_TARGET_CAPTURE4,
                                     TIVX_TARGET_CAPTURE5, TIVX_TARGET_CAPTURE6,
@@ -83,6 +83,9 @@ static uint8_t g_viss_target_idx = 0;
 
 static char *g_ldc_targets[] = {TIVX_TARGET_VPAC_LDC1, TIVX_TARGET_VPAC2_LDC1};
 static uint8_t g_ldc_target_idx = 0;
+
+static char *g_decode_devices[] = {"/dev/video0", "/dev/video2"};
+static uint8_t g_decode_devices_idx = 0;
 
 #else
 
@@ -99,6 +102,9 @@ static uint8_t g_viss_target_idx = 0;
 
 static char *g_ldc_targets[] = {TIVX_TARGET_VPAC_LDC1};
 static uint8_t g_ldc_target_idx = 0;
+
+static char *g_decode_devices[] = {"/dev/video0"};
+static uint8_t g_decode_devices_idx = 0;
 
 #endif
 
@@ -163,9 +169,9 @@ int32_t create_input_block(GraphObj *graph, InputBlock *input_block)
 
     if(RTOS_CAM == input_info->source || LINUX_CAM == input_info->source)
     {
-        sprintf(viss_dcc_path, "/opt/imaging/%s/linear/dcc_viss.bin", input_info->sensor_name);
-        sprintf(ldc_dcc_path, "/opt/imaging/%s/linear/dcc_ldc.bin", input_info->sensor_name);
-        sprintf(aewb_dcc_path, "/opt/imaging/%s/linear/dcc_2a.bin", input_info->sensor_name);
+        sprintf(viss_dcc_path, TIOVX_MODULES_IMAGING_PATH"/%s/linear/dcc_viss.bin", input_info->sensor_name);
+        sprintf(ldc_dcc_path, TIOVX_MODULES_IMAGING_PATH"/%s/linear/dcc_ldc.bin", input_info->sensor_name);
+        sprintf(aewb_dcc_path, TIOVX_MODULES_IMAGING_PATH"/%s/linear/dcc_2a.bin", input_info->sensor_name);
 
         if (0 == strcmp("imx390",input_info->sensor_name))
         {
@@ -176,7 +182,7 @@ int32_t create_input_block(GraphObj *graph, InputBlock *input_block)
             v4l2_pix_format = V4L2_PIX_FMT_SRGGB12;
 #endif
             output_width = 1936;
-            output_height = 1096;
+            output_height = 1100;
         }
         else if (0 == strcmp("imx219",input_info->sensor_name))
         {
@@ -506,7 +512,7 @@ int32_t create_input_block(GraphObj *graph, InputBlock *input_block)
     }
 
     /* H264 VID */
-    if(H264_VID == input_info->source)
+    if(VIDEO == input_info->source)
     {
         /* V4L2 Decode */
         {
@@ -517,6 +523,16 @@ int32_t create_input_block(GraphObj *graph, InputBlock *input_block)
             v4l2_decode_cfg.bufq_depth = 10;
             tee_bufq_depth = v4l2_decode_cfg.bufq_depth;
             sprintf(v4l2_decode_cfg.file, input_info->video_path);
+
+            sprintf(v4l2_decode_cfg.device,
+                    g_decode_devices[g_decode_devices_idx]);
+
+            g_decode_devices_idx++;
+            if(g_decode_devices_idx >=
+               sizeof(g_decode_devices)/sizeof(g_decode_devices[0]))
+            {
+                g_decode_devices_idx = 0;
+            }
 
             input_block->v4l2_obj.v4l2_decode_handle = v4l2_decode_create_handle(&v4l2_decode_cfg,
                                                                                  &v4l2_decode_fmt);

@@ -63,6 +63,8 @@
 
 #define TIOVX_MODULES_DEFAULT_AEWB_SENSOR "SENSOR_SONY_IMX390_UB953_D3"
 
+IssAeDynamicParams g_ae_dynPrms = {};
+
 typedef struct {
     vx_object_array         config_arr;
     vx_user_data_object     dcc_config;
@@ -276,6 +278,7 @@ vx_status tiovx_aewb_create_histogram(NodeObj *node)
 
 void tiovx_aewb_init_cfg(TIOVXAewbNodeCfg *node_cfg)
 {
+    CLR(node_cfg);
     sprintf(node_cfg->sensor_name, TIOVX_MODULES_DEFAULT_AEWB_SENSOR);
     node_cfg->awb_mode = ALGORITHMS_ISS_AWB_AUTO;
     node_cfg->awb_num_skip_frames = 9;

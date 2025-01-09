@@ -437,11 +437,9 @@ vx_status tiovx_tidl_update_checksums(NodeObj *node)
 vx_status tiovx_tidl_set_createParams(NodeObj *node)
 {
     vx_status status = VX_FAILURE;
-
-#if defined(SOC_J784S4) || defined(SOC_J722S)
+#if defined(SOC_J784S4) || defined(SOC_J722S) || defined(SOC_J742S2)
     TIOVXTIDLNodeCfg *node_cfg = (TIOVXTIDLNodeCfg *)node->node_cfg;
 #endif
-
     TIOVXTIDLNodePriv *node_priv = (TIOVXTIDLNodePriv *)node->node_priv;
 
     vx_map_id  map_id;
@@ -478,6 +476,26 @@ vx_status tiovx_tidl_set_createParams(NodeObj *node)
         prms->quantRangeUpdateFactor        = 0.0;
         prms->traceLogLevel                 = 0;
         prms->traceWriteLevel               = 0;
+#if defined(SOC_J784S4)
+        if (0 == strcmp(TIVX_TARGET_DSP_C7_2, node_cfg->target_string))
+        {
+            prms->coreId = 1;
+        }
+        else if (0 == strcmp(TIVX_TARGET_DSP_C7_3, node_cfg->target_string))
+        {
+            prms->coreId = 2;
+        }
+        else if (0 == strcmp(TIVX_TARGET_DSP_C7_4, node_cfg->target_string))
+        {
+            prms->coreId = 3;
+        }
+#elif defined(SOC_J722S) || defined(SOC_J742S2)
+        if (0 == strcmp(TIVX_TARGET_DSP_C7_2, node_cfg->target_string))
+        {
+            prms->coreId = 1;
+        }
+#endif
+
     }
     else
     {
@@ -629,6 +647,7 @@ vx_status tiovx_tidl_create_outArgs(NodeObj *node)
 
 void tiovx_tidl_init_cfg(TIOVXTIDLNodeCfg *node_cfg)
 {
+    CLR(node_cfg);
     node_cfg->num_input_tensors = 1;
     node_cfg->num_output_tensors = 1;
     node_cfg->num_channels = 1;
@@ -644,6 +663,8 @@ vx_status tiovx_tidl_init_node(NodeObj *node)
     vx_reference exemplar;
     vx_size tensor_sizes[TIOVX_MODULES_MAX_TENSOR_DIMS];
     vx_int32 i;
+
+    CLR(node_priv);
 
     status = tiovx_tidl_set_cfg(node);
     if(VX_SUCCESS != status)
@@ -745,7 +766,7 @@ vx_status tiovx_tidl_init_node(NodeObj *node)
     sprintf(node->name, "tidl_node");
 
     node_priv->kernel = tivxAddKernelTIDL(node->graph->tiovx_context,
-                                         node_cfg->num_input_tensors, 
+                                         node_cfg->num_input_tensors,
                                          node_cfg->num_output_tensors);
     status = vxGetStatus((vx_reference)node_priv->kernel);
     if (VX_SUCCESS != status)

@@ -69,7 +69,7 @@
 #define NUM_ITERATIONS   (400)
 
 #define VISS_INPUT_WIDTH  1936
-#define VISS_INPUT_HEIGHT 1096
+#define VISS_INPUT_HEIGHT 1100
 
 #define VISS_OUTPUT_WIDTH  (VISS_INPUT_WIDTH)
 #define VISS_OUTPUT_HEIGHT (VISS_INPUT_HEIGHT)
@@ -94,8 +94,8 @@
 #define LDC_PIXEL_PAD       (1)
 
 #define SENSOR_NAME "SENSOR_SONY_IMX390_UB953_D3"
-#define DCC_VISS "/opt/imaging/imx390/linear/dcc_viss.bin"
-#define DCC_LDC "/opt/imaging/imx390/linear/dcc_ldc.bin"
+#define DCC_VISS TIOVX_MODULES_IMAGING_PATH"/imx390/linear/dcc_viss.bin"
+#define DCC_LDC TIOVX_MODULES_IMAGING_PATH"/imx390/linear/dcc_ldc.bin"
 
 vx_status app_modules_capture_viss_ldc_msc_display_test(vx_int32 argc, vx_char* argv[])
 {
@@ -118,8 +118,8 @@ vx_status app_modules_capture_viss_ldc_msc_display_test(vx_int32 argc, vx_char* 
     /* Capture */
     tiovx_capture_init_cfg(&capture_cfg);
 
+    sprintf(capture_cfg.sensor_name, SENSOR_NAME);
     capture_cfg.ch_mask = 1;
-    capture_cfg.sensor_index = 0; /* 0 for IMX390 2MP cameras */
     capture_cfg.enable_error_detection = 0;
 
     capture_node = tiovx_modules_add_node(&graph, TIOVX_CAPTURE, (void *)&capture_cfg);

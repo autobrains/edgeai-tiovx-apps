@@ -75,6 +75,7 @@ extern char *EDGEAI_DATA_PATH;
 
 vx_status readImage(char* file_name, vx_image img);
 vx_status writeImage(char* file_name, vx_image img);
+vx_status writeDistribution(char* file_name, vx_distribution dist);
 vx_status resetImage(vx_image img, int32_t value);
 
 vx_status readRawImage(char* file_name, tivx_raw_image img, vx_uint32 *bytes_read);
@@ -85,6 +86,7 @@ vx_status writeTensor(char* file_name, vx_tensor tensor);
 
 int getDmaFd(vx_reference ref);
 int getImageDmaFd(vx_reference ref, vx_int32 *fd, vx_uint32 *pitch, vx_uint64 *size, vx_uint32 *offset, vx_uint32 count);
+int getReferenceAddr(vx_reference ref, void **addr, vx_uint64 *size);
 
 #ifdef __cplusplus
 }

@@ -80,7 +80,7 @@ vx_status app_modules_capture_test(vx_int32 argc, vx_char* argv[])
     char output_filename[100];
     int32_t i, frame_count;
 
-    sprintf(output_filename, "%s/output/imx390_1936x1096_capture_nv12.yuv", EDGEAI_DATA_PATH);
+    sprintf(output_filename, "%s/output/imx390_1936x1100_capture_nv12.yuv", EDGEAI_DATA_PATH);
 
     status = tiovx_modules_initialize_graph(&graph);
     graph.schedule_mode = VX_GRAPH_SCHEDULE_MODE_QUEUE_AUTO;
@@ -89,7 +89,6 @@ vx_status app_modules_capture_test(vx_int32 argc, vx_char* argv[])
     tiovx_capture_init_cfg(&capture_cfg);
 
     capture_cfg.ch_mask = 1;
-    capture_cfg.sensor_index = 0; /* 0 for IMX390 2MP cameras */
     capture_cfg.enable_error_detection = 0;
 
     capture_node = tiovx_modules_add_node(&graph, TIOVX_CAPTURE, (void *)&capture_cfg);

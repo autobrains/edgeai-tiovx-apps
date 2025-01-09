@@ -546,7 +546,7 @@ int32_t connect_blocks(GraphObj *graph,
     return 0;
 }
 
-int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
+int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, CmdArgs *cmd_args)
 {
     int32_t status;
     int32_t i, j;
@@ -588,6 +588,7 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
     Buf *perf_overlay_buf = NULL;
 
     EdgeAIPerfStats perf_stats_handle;
+    bool overlay_perf_graph = true;
 
     /* Capture SIGINT to stop loop */
     signal(SIGINT, interrupt_handler);
@@ -642,16 +643,20 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
     }
 
     /* Dump graph as a dot file */
-    status = tiovx_modules_export_graph(&graph, ".", "test_graph");
-    if (VX_SUCCESS != status)
+    if(cmd_args->dump_dot)
     {
-        TIOVX_APPS_ERROR("Error exporting graph as dot\n");
-        goto clean_graph;
+        status = tiovx_modules_export_graph(&graph,
+                                            ".",
+                                            "edgeai_tiovx_apps");
+        if (VX_SUCCESS != status)
+        {
+            TIOVX_APPS_ERROR("Error exporting graph as dot\n");
+            goto clean_graph;
+        }
     }
 
     /* Initialize perf stats */
     initialize_edgeai_perf_stats(&perf_stats_handle);
-    perf_stats_handle.overlayType = OVERLAY_TYPE_GRAPH;
     perf_stats_handle.numInstances = 0;
     for(i = 0; i < num_output_blocks; i++)
     {
@@ -659,6 +664,12 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
         {
             perf_stats_handle.numInstances++;
         }
+    }
+
+    if(perf_stats_handle.numInstances == 0)
+    {
+        overlay_perf_graph = false;
+        perf_stats_handle.numInstances = 1;
     }
 
     /* Enqueue buffers at start based on input sources in all input blocks */
@@ -698,7 +709,7 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
             v4l2_capture_start(input_blocks[i].v4l2_obj.v4l2_capture_handle);
         }
 
-        else if (H264_VID == input_blocks[i].input_info->source)
+        else if (VIDEO == input_blocks[i].input_info->source)
         {
             /* Enqueue buffers to v4l2 decode handle*/
             for (j = 0; j < in_buf_pool->bufq_depth; j++)
@@ -766,7 +777,8 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
                                              &out_buf_pool->bufs[j]);
                 }
             }
-            else if (H264_ENCODE == output_blocks[i].output_info->sink)
+            else if (H264_ENCODE == output_blocks[i].output_info->sink ||
+                     H265_ENCODE == output_blocks[i].output_info->sink)
             {
                 for (j = 0; j < out_buf_pool->bufq_depth; j++)
                 {
@@ -794,6 +806,91 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
         }
     }
 
+#if defined(TARGET_OS_LINUX)
+    /* Enqueue half buffer from pool to tiovx graph for v4l2 capture */
+    uint8_t buf_cnt = 0;
+    while(buf_cnt < 2)
+    {
+        bool skip = false;
+
+        for(i = 0; i < num_input_blocks; i++)
+        {
+            if (LINUX_CAM == input_blocks[i].input_info->source)
+            {
+                /*
+                 * Dqueue v4l2 buffers and if not NULL store in valid buffers
+                 * which will be used later to enqueue and dqueue in openvx graph
+                 */
+                v4l2_dq_bufs[i] = v4l2_capture_dqueue_buf(input_blocks[i].v4l2_obj.v4l2_capture_handle);
+                if(NULL != v4l2_dq_bufs[i] && NULL ==  v4l2_valid_bufs[i])
+                {
+                    v4l2_valid_bufs[i] = v4l2_dq_bufs[i];
+                    v4l2_dq_bufs[i] = NULL;
+                }
+            }
+        }
+
+        for(i = 0; i < num_input_blocks; i++)
+        {
+            if (LINUX_CAM == input_blocks[i].input_info->source &&
+                NULL == v4l2_valid_bufs[i])
+            {
+                /*
+                 * Skip if any v4l2 buffer is not there
+                 */
+                skip = true;
+                break;
+            }
+        }
+
+        for(i = 0; i < num_input_blocks; i++)
+        {
+            if (LINUX_CAM == input_blocks[i].input_info->source)
+            {
+                /*
+                 * If all v4l2 buffers are present, enqueue to openvx graph.
+                 */
+                if(!skip)
+                {
+                    tiovx_modules_enqueue_buf(v4l2_valid_bufs[i]);
+                    v4l2_valid_bufs[i] = NULL;
+
+                    /* AEWB processing for linux */
+                    linux_h3a_buf_pool = input_blocks[i].v4l2_obj.h3a_pad->buf_pool;
+                    linux_aewb_buf_pool = input_blocks[i].v4l2_obj.aewb_pad->buf_pool;
+                    linux_h3a_buf = tiovx_modules_dequeue_buf(linux_h3a_buf_pool);
+                    linux_aewb_buf = tiovx_modules_dequeue_buf(linux_aewb_buf_pool);
+                    aewb_process(input_blocks[i].v4l2_obj.aewb_handle, linux_h3a_buf, linux_aewb_buf);
+                    tiovx_modules_enqueue_buf(linux_h3a_buf);
+                    tiovx_modules_enqueue_buf(linux_aewb_buf);
+                }
+
+                /*
+                 * Else, enqueue back the dequeue buffer from v4l2 capture
+                 */
+                if(NULL != v4l2_dq_bufs[i])
+                {
+                    v4l2_capture_enqueue_buf(input_blocks[i].v4l2_obj.v4l2_capture_handle, v4l2_dq_bufs[i]);
+                }
+            }
+        }
+
+        if(!skip)
+        {
+            buf_cnt++;
+        }
+
+    }
+
+    for (i = 0; i < num_flows; i++)
+    {
+        v4l2_valid_bufs[i] = NULL;
+        v4l2_dq_bufs[i] = NULL;
+    }
+
+#endif
+
+
     /* Main loop that runs till interrupt */
     while(run_loop)
     {
@@ -813,9 +910,10 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
                  * which will be used later to enqueue and dqueue in openvx graph
                  */
                 v4l2_dq_bufs[i] = v4l2_capture_dqueue_buf(input_blocks[i].v4l2_obj.v4l2_capture_handle);
-                if(NULL != v4l2_dq_bufs[i])
+                if(NULL != v4l2_dq_bufs[i] && NULL ==  v4l2_valid_bufs[i])
                 {
                     v4l2_valid_bufs[i] = v4l2_dq_bufs[i];
+                    v4l2_dq_bufs[i] = NULL;
                 }
             }
         }
@@ -826,7 +924,7 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
                 NULL == v4l2_valid_bufs[i])
             {
                 /*
-                 * Skip the loop if any v4l2 buffer is not there
+                 * Skip if any v4l2 buffer is not there
                  */
                 skip = true;
                 break;
@@ -862,10 +960,11 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
                 /*
                  * Else, enqueue back the dequeue buffer from v4l2 capture
                  */
-                else if(NULL != v4l2_dq_bufs[i])
+                if(NULL != v4l2_dq_bufs[i])
                 {
                     v4l2_capture_enqueue_buf(input_blocks[i].v4l2_obj.v4l2_capture_handle, v4l2_dq_bufs[i]);
                 }
+
             }
         }
 
@@ -889,7 +988,7 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
             }
 
 #if defined(TARGET_OS_LINUX)
-            else if (H264_VID == input_blocks[i].input_info->source)
+            else if (VIDEO == input_blocks[i].input_info->source)
             {
                 /* Dequeue from graph, enqueue to v4l2 for decode,
                  * then dequeue from v4l2 and enqueue to graph
@@ -948,7 +1047,8 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
                     kms_display_render_buf(output_blocks[i].kms_obj.kms_display_handle,
                                            outbuf);
                 }
-                else if (H264_ENCODE == output_blocks[i].output_info->sink)
+                else if (H264_ENCODE == output_blocks[i].output_info->sink ||
+                         H265_ENCODE == output_blocks[i].output_info->sink)
                 {
                     v4l2_encode_enqueue_buf(output_blocks[i].v4l2_obj.v4l2_encode_handle, outbuf);
                     outbuf = v4l2_encode_dqueue_buf(output_blocks[i].v4l2_obj.v4l2_encode_handle);
@@ -968,12 +1068,27 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
                 perf_overlay_buf_pool = output_blocks[i].perf_overlay_pad->buf_pool;
                 perf_overlay_buf = tiovx_modules_dequeue_buf(perf_overlay_buf_pool);
                 update_perf_overlay((vx_image)perf_overlay_buf->handle, &perf_stats_handle);
-                if(verbose)
+                if(cmd_args->verbose)
                 {
                     print_perf(&graph, &perf_stats_handle);
                 }
+                if(cmd_args->gen_data)
+                {
+                    generate_datasheet(&graph, &perf_stats_handle);
+                }
                 tiovx_modules_enqueue_buf(perf_overlay_buf);
             }
+        }
+
+        if(!overlay_perf_graph && cmd_args->verbose)
+        {
+            update_perf_overlay(NULL, &perf_stats_handle);
+            print_perf(&graph, &perf_stats_handle);
+        }
+        if(!overlay_perf_graph && cmd_args->gen_data)
+        {
+            update_perf_overlay(NULL, &perf_stats_handle);
+            generate_datasheet(&graph, &perf_stats_handle);
         }
     }
 
@@ -1005,13 +1120,23 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
 #if defined(TARGET_OS_LINUX)
         else if (LINUX_CAM == input_blocks[i].input_info->source)
         {
+            for(j = 0; j < 2; j++) {
+                inbuf = tiovx_modules_dequeue_buf(in_buf_pool);
+                tiovx_modules_release_buf(inbuf);
+            }
             v4l2_capture_stop(input_blocks[i].v4l2_obj.v4l2_capture_handle);
             v4l2_capture_delete_handle(input_blocks[i].v4l2_obj.v4l2_capture_handle);
         }
-        else if (H264_VID == input_blocks[i].input_info->source)
+        else if (VIDEO == input_blocks[i].input_info->source)
         {
+            inbuf = tiovx_modules_dequeue_buf(in_buf_pool);
+            tiovx_modules_release_buf(inbuf);
             v4l2_decode_stop(input_blocks[i].v4l2_obj.v4l2_decode_handle);
             v4l2_decode_delete_handle(input_blocks[i].v4l2_obj.v4l2_decode_handle);
+        }
+        else {
+            inbuf = tiovx_modules_dequeue_buf(in_buf_pool);
+            tiovx_modules_release_buf(inbuf);
         }
 #endif
     }
@@ -1019,10 +1144,15 @@ int32_t run_app(FlowInfo flow_infos[], uint32_t num_flows, bool verbose)
 #if defined(TARGET_OS_LINUX)
     for(i = 0; i < num_output_blocks; i++)
     {
-        if (H264_ENCODE == output_blocks[i].output_info->sink)
+        if (H264_ENCODE == output_blocks[i].output_info->sink ||
+            H265_ENCODE == output_blocks[i].output_info->sink)
         {
             v4l2_encode_stop(output_blocks[i].v4l2_obj.v4l2_encode_handle);
             v4l2_encode_delete_handle(output_blocks[i].v4l2_obj.v4l2_encode_handle);
+        }
+        if (LINUX_DISPLAY == output_blocks[i].output_info->sink)
+        {
+            kms_display_delete_handle(output_blocks[i].kms_obj.kms_display_handle);
         }
     }
 #endif
