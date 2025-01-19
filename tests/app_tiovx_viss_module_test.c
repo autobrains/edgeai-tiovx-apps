@@ -70,7 +70,35 @@
 #define INPUT_HEIGHT (1080)
 
 #define SENSOR_NAME "SENSOR_SONY_IMX219_RPI"
-#define DCC_VISS TIOVX_MODULES_IMAGING_PATH"/imx219/linear/dcc_viss.bin"
+// #define DCC_VISS TIOVX_MODULES_IMAGING_PATH"/imx219/linear/dcc_viss.bin"
+#define DCC_VISS "/root/autobrains/dcc_viss_1920x1080.bin"
+
+void print_histogram(Buf *histogram_buf) {
+    vx_status status = VX_FAILURE;
+    uint32_t *data_ptr;
+    vx_map_id map_id;
+    vx_size num_bins;
+    vx_size total_size_bytes;
+
+    vxQueryDistribution(histogram_buf->handle, VX_DISTRIBUTION_BINS, &num_bins, sizeof(vx_size));
+    vxQueryDistribution(histogram_buf->handle, VX_DISTRIBUTION_SIZE, &total_size_bytes, sizeof(vx_size));
+
+    status = vxMapDistribution(histogram_buf->handle,
+                            &map_id,
+                            &data_ptr,
+                            VX_READ_ONLY,
+                            VX_MEMORY_TYPE_HOST,
+                            0);
+
+    int sum = 0;
+    for (int i=0; i<num_bins; i+=4) {
+        printf("bin%03d: %-10d %-10d %-10d %-10d\n", i, data_ptr[i], data_ptr[i+1], data_ptr[i+2], data_ptr[i+3]);
+        sum += data_ptr[i];
+    }
+    printf("histogram sum %d\n", sum);
+
+    status = vxUnmapDistribution(histogram_buf->handle, map_id);
+}
 
 vx_status app_modules_viss_test(vx_int32 argc, vx_char* argv[])
 {
@@ -84,7 +112,7 @@ vx_status app_modules_viss_test(vx_int32 argc, vx_char* argv[])
     char output_filename[100];
     vx_uint32 bytes_read;
 
-    sprintf(input_filename, "%s/raw_images/modules_test/imx219_1920x1080_capture.raw", EDGEAI_DATA_PATH);
+    sprintf(input_filename, argv[1]);
     sprintf(output_filename, "%s/output/imx219_1920x1080_capture_nv12.yuv", EDGEAI_DATA_PATH);
 #ifndef SOC_J721E
     BufPool *histogram_buf_pool = NULL;
@@ -137,6 +165,7 @@ vx_status app_modules_viss_test(vx_int32 argc, vx_char* argv[])
     writeImage(output_filename, (vx_image)out_buf->handle);
 #ifndef SOC_J721E
     writeDistribution(output_distribution_name, (vx_distribution)histogram_buf->handle);
+    print_histogram(histogram_buf);
 #endif
     tiovx_modules_release_buf(inbuf);
     tiovx_modules_release_buf(out_buf);
