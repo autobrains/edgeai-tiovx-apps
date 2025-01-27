@@ -612,7 +612,7 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
     ae_params_t ae_params;
     ae_params_get(&ae_params);
     memcpy(p_ae_dynPrms, &ae_params.dyn_params, sizeof(IssAeDynamicParams));
-    // TI_AE_set_cur_y_from_cc_pixels(ae_params.cur_y_from_cc_pixels);
+    TI_AE_set_cur_y_from_cc_pixels(ae_params.cur_y_from_cc_pixels);
 
 #endif
 

@@ -106,6 +106,8 @@ std::string ae_params_get_path() {
     std::string path2 = "./ae_params.yaml";
     std::string path3 = "/home/root/app/imx728/dcc_3856x2176/ae_params.yaml";
     std::string path4 = "/home/root/autobrains/imx728/dcc_3856x2176/ae_params.yaml";
+    std::string path5 = "/root/app/imx728/dcc_3856x2176/ae_params.yaml";
+    std::string path6 = "/root/autobrains/imx728/dcc_3856x2176/ae_params.yaml";    
 
     if (path1!=NULL and fs::exists(path1)) {
         return path1;
@@ -121,7 +123,15 @@ std::string ae_params_get_path() {
 
     if (fs::exists(path4)) {
         return path4;
-    }    
+    }
+
+    if (fs::exists(path5)) {
+        return path5;
+    }  
+
+    if (fs::exists(path6)) {
+        return path6;
+    }          
 
     return "";
 }
