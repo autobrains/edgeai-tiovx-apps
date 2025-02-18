@@ -68,7 +68,7 @@ template<> struct convert<ae_params_t> {
             node["periodic_fixed_exposure_gain_switch"]["num_configs"] = rhs.periodic_fixed_exposure_gain_switch.num_configs;
 
             for (uint32_t i=0; i<rhs.periodic_fixed_exposure_gain_switch.num_configs; i+=1) {
-                node["periodic_fixed_exposure_gain_switch"]["configs"][i]["exposure_msec"] = rhs.periodic_fixed_exposure_gain_switch.configs[i].exposure_msec;
+                node["periodic_fixed_exposure_gain_switch"]["configs"][i]["exposure_usec"] = rhs.periodic_fixed_exposure_gain_switch.configs[i].exposure_usec;
                 node["periodic_fixed_exposure_gain_switch"]["configs"][i]["analog_gain"] = rhs.periodic_fixed_exposure_gain_switch.configs[i].analog_gain;
             }   
         }
@@ -115,7 +115,7 @@ template<> struct convert<ae_params_t> {
             rhs.periodic_fixed_exposure_gain_switch.num_configs = node["periodic_fixed_exposure_gain_switch"]["num_configs"].as<uint32_t>();
 
             for (uint32_t i=0; i<rhs.periodic_fixed_exposure_gain_switch.num_configs; i+=1) {
-                rhs.periodic_fixed_exposure_gain_switch.configs[i].exposure_msec = node["periodic_fixed_exposure_gain_switch"]["configs"][i]["exposure_msec"].as<uint32_t>();
+                rhs.periodic_fixed_exposure_gain_switch.configs[i].exposure_usec = node["periodic_fixed_exposure_gain_switch"]["configs"][i]["exposure_usec"].as<uint32_t>();
                 rhs.periodic_fixed_exposure_gain_switch.configs[i].analog_gain = node["periodic_fixed_exposure_gain_switch"]["configs"][i]["analog_gain"].as<uint32_t>();
             }   
         }   
@@ -220,7 +220,7 @@ void ae_params_dump(ae_params_t *p_params)
         LOG(INFO) << "periodic_fixed_exposure_gain_switch.num_configs " << p_params->periodic_fixed_exposure_gain_switch.num_configs;
 
         for (uint32_t i=0; i<p_params->periodic_fixed_exposure_gain_switch.num_configs; i+=1) {
-            LOG(INFO) << "periodic_fixed_exposure_gain_switch.configs[" << i << "].exposure_msec " << p_params->periodic_fixed_exposure_gain_switch.configs[i].exposure_msec;
+            LOG(INFO) << "periodic_fixed_exposure_gain_switch.configs[" << i << "].exposure_usec " << p_params->periodic_fixed_exposure_gain_switch.configs[i].exposure_usec;
             LOG(INFO) << "periodic_fixed_exposure_gain_switch.configs[" << i << "].analog_gain " << p_params->periodic_fixed_exposure_gain_switch.configs[i].analog_gain;
         }   
     }

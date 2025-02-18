@@ -21,7 +21,7 @@ periodic_fixed_exposure_gain_switch:
   num_frames_per_config: 17
   num_configs: 2
   configs:
-    - exposure_msec: 111
+    - exposure_usec: 111
       analog_gain: 112
-    - exposure_msec: 113
+    - exposure_usec: 113
       analog_gain: 114

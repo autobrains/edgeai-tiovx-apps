@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 typedef struct {
-    uint32_t exposure_msec;
+    uint32_t exposure_usec;
     uint32_t analog_gain; // 1024 = x1
 } fixed_exposure_gain_config_t;
 

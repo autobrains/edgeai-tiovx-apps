@@ -91,9 +91,9 @@ void good_periodic_fixed_exposure_gain_switch() {
     assert(params.periodic_fixed_exposure_gain_switch.enable==1);    
     assert(params.periodic_fixed_exposure_gain_switch.num_frames_per_config==17);
     assert(params.periodic_fixed_exposure_gain_switch.num_configs==2);
-    assert(params.periodic_fixed_exposure_gain_switch.configs[0].exposure_msec==111);
+    assert(params.periodic_fixed_exposure_gain_switch.configs[0].exposure_usec==111);
     assert(params.periodic_fixed_exposure_gain_switch.configs[0].analog_gain==112);
-    assert(params.periodic_fixed_exposure_gain_switch.configs[1].exposure_msec==113);
+    assert(params.periodic_fixed_exposure_gain_switch.configs[1].exposure_usec==113);
     assert(params.periodic_fixed_exposure_gain_switch.configs[1].analog_gain==114);
 }
 
