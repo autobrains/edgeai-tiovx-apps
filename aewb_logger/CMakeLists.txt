@@ -7,6 +7,7 @@ set(SRC_FILES
     aewb_logger_receiver.c
     aewb_debug_utils.c
     ../ae_params/ae_params.cpp # we add this here to avoid passing an extra lib to Cartica-Renesas
+    ../aewb_debug_mode/periodic_fixed_exposure_gain_switch.c # we add this here to avoid passing an extra lib to Cartica-Renesas
     )
 
 

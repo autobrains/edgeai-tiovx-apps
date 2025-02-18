@@ -9,8 +9,21 @@ extern "C" {
 #endif
 
 typedef struct {
+    uint32_t exposure_msec;
+    uint32_t analog_gain; // 1024 = x1
+} fixed_exposure_gain_config_t;
+
+typedef struct {
+    uint8_t enable;
+    uint32_t num_frames_per_config;
+    uint32_t num_configs;
+    fixed_exposure_gain_config_t configs[20];
+} periodic_fixed_exposure_gain_switch_config_t;
+
+typedef struct {
     IssAeDynamicParams dyn_params;
     int cur_y_from_cc_pixels;
+    periodic_fixed_exposure_gain_switch_config_t periodic_fixed_exposure_gain_switch;
 } ae_params_t;
 
 extern int ae_params_get(ae_params_t *p_params);

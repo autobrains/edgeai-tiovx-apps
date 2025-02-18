@@ -66,6 +66,7 @@
 #include "aewb_logger_sender.h"
 #include "ae_params.h"
 #include "TI_aaa_ae.h"
+#include "periodic_fixed_exposure_gain_switch.h"
 
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -613,7 +614,7 @@ void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
     ae_params_get(&ae_params);
     memcpy(p_ae_dynPrms, &ae_params.dyn_params, sizeof(IssAeDynamicParams));
     TI_AE_set_cur_y_from_cc_pixels(ae_params.cur_y_from_cc_pixels);
-
+    periodic_fixed_exposure_gain_switch_set_config(&ae_params.periodic_fixed_exposure_gain_switch);
 #endif
 
 }
@@ -705,7 +706,17 @@ void gst_tiovx_isp_map_2A_values (char *sensor_name, int exposure_time,
       *exposure_time_mapped = exposure_time;
       *analog_gain_mapped = gIMX390GainsTable[i][1];
   } else if (strcmp(sensor_name, "SENSOR_SONY_IMX728") == 0) {     
-      *analog_gain_mapped = (int)((log2(analog_gain) - 10.0) * 60.0);
+    /*
+       see imx728 application note in "5.2.3.7.2. Full ME" about FME_ISPGAIN units - converting magnification factor to 0.1dB
+      
+         20*log10(magnification_factor_float) 
+       = 20*log2(magnification_factor_U22.10/1024)/log10(2) 
+       = log2(magnification_factor_U22.10/1024)*6.02
+       = (log2(magnification_factor_U22.10)-10)*6.02
+
+       how to confirm - write gain to FME_ISPGAIN in 0.1dB and read result back from E177,E178,E179 front embedded data in magnification factor 
+    */
+      *analog_gain_mapped = (int)round((log2(analog_gain)-10)/0.1*6.02);
       *exposure_time_mapped = exposure_time;
   }else if (strcmp(sensor_name, "SENSOR_SONY_IMX219_RPI") == 0) {
       double multiplier = 0;
@@ -878,6 +889,8 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
     if (status) {
         TIOVX_MODULE_ERROR("[AEWB] Process call failed: %d", status);
     }
+
+    periodic_fixed_exposure_gain_switch_run_if_en(&handle->sensor_out_data, aewb_ptr);
 
     aewb_logger_send_log(
         aewb_logger_sender_state_ptr,

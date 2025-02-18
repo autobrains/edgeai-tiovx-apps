@@ -28,6 +28,7 @@ void good_single_range() {
     assert(params.dyn_params.digitalGainRange[i].max==12);
 
     assert(params.dyn_params.numAeDynParams==1);
+    assert(params.periodic_fixed_exposure_gain_switch.enable==0);
 }
 
 void good_multi_range() {
@@ -60,6 +61,54 @@ void good_multi_range() {
     assert(params.dyn_params.digitalGainRange[i].max==25);    
 
     assert(params.dyn_params.numAeDynParams==2);
+    assert(params.periodic_fixed_exposure_gain_switch.enable==0);
+}
+
+void good_periodic_fixed_exposure_gain_switch() {
+    ae_params_t params;
+    int ret = ae_params_get_params_from_yaml("./ae_params/test_yaml/good_periodic_fixed_exposure_gain_switch.yaml", &params);   
+    assert(ret==1);
+
+    ae_params_dump(&params);
+    
+    assert(params.dyn_params.targetBrightnessRange.min==1);
+    assert(params.dyn_params.targetBrightnessRange.max==2);
+    assert(params.dyn_params.targetBrightness==3);
+    assert(params.dyn_params.threshold==4);
+    assert(params.dyn_params.enableBlc==5);
+    assert(params.dyn_params.exposureTimeStepSize==6);
+    
+    int i=0;
+    assert(params.dyn_params.exposureTimeRange[i].min==7);
+    assert(params.dyn_params.exposureTimeRange[i].max==8);
+    assert(params.dyn_params.analogGainRange[i].min==9);
+    assert(params.dyn_params.analogGainRange[i].max==10);
+    assert(params.dyn_params.digitalGainRange[i].min==11);
+    assert(params.dyn_params.digitalGainRange[i].max==12);
+
+    assert(params.dyn_params.numAeDynParams==1);
+
+    assert(params.periodic_fixed_exposure_gain_switch.enable==1);    
+    assert(params.periodic_fixed_exposure_gain_switch.num_frames_per_config==17);
+    assert(params.periodic_fixed_exposure_gain_switch.num_configs==2);
+    assert(params.periodic_fixed_exposure_gain_switch.configs[0].exposure_msec==111);
+    assert(params.periodic_fixed_exposure_gain_switch.configs[0].analog_gain==112);
+    assert(params.periodic_fixed_exposure_gain_switch.configs[1].exposure_msec==113);
+    assert(params.periodic_fixed_exposure_gain_switch.configs[1].analog_gain==114);
+}
+
+void bad_periodic_fixed_exposure_gain_switch_missing_num_configs()
+{
+    ae_params_t params;
+    int ret = ae_params_get_params_from_yaml("./ae_params/test_yaml/bad_periodic_fixed_exposure_gain_switch_missing_num_configs.yaml", &params);   
+    assert(ret==0);
+}
+
+void bad_periodic_fixed_exposure_gain_switch_missing_configs()
+{
+    ae_params_t params;
+    int ret = ae_params_get_params_from_yaml("./ae_params/test_yaml/bad_periodic_fixed_exposure_gain_switch_missing_configs.yaml", &params);   
+    assert(ret==0);
 }
 
 void missing_root_attr1() {
@@ -110,6 +159,15 @@ int main() {
 
     printf("\ngood_multi_range\n");
     good_multi_range();
+
+    printf("\ngood_periodic_fixed_exposure_gain_switch\n");
+    good_periodic_fixed_exposure_gain_switch();
+
+    printf("\nbad_periodic_fixed_exposure_gain_switch_missing_num_configs\n");
+    bad_periodic_fixed_exposure_gain_switch_missing_num_configs();
+
+    printf("\nbad_periodic_fixed_exposure_gain_switch_missing_configs\n");
+    bad_periodic_fixed_exposure_gain_switch_missing_configs();    
 
     printf("\nmissing_root_attr1\n");
     missing_root_attr1();

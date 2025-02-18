@@ -60,12 +60,26 @@ template<> struct convert<ae_params_t> {
         }
 
         node["cur_y_from_cc_pixels"] = rhs.cur_y_from_cc_pixels;
+
+        if (rhs.periodic_fixed_exposure_gain_switch.enable)
+        {
+            node["periodic_fixed_exposure_gain_switch"]["enable"] = rhs.periodic_fixed_exposure_gain_switch.enable;
+            node["periodic_fixed_exposure_gain_switch"]["num_frames_per_config"] = rhs.periodic_fixed_exposure_gain_switch.num_frames_per_config;
+            node["periodic_fixed_exposure_gain_switch"]["num_configs"] = rhs.periodic_fixed_exposure_gain_switch.num_configs;
+
+            for (uint32_t i=0; i<rhs.periodic_fixed_exposure_gain_switch.num_configs; i+=1) {
+                node["periodic_fixed_exposure_gain_switch"]["configs"][i]["exposure_msec"] = rhs.periodic_fixed_exposure_gain_switch.configs[i].exposure_msec;
+                node["periodic_fixed_exposure_gain_switch"]["configs"][i]["analog_gain"] = rhs.periodic_fixed_exposure_gain_switch.configs[i].analog_gain;
+            }   
+        }
         
         return node;
     }
 
     static bool decode(const Node& node, ae_params_t& rhs) {
         bool ret = true;
+
+        memset(&rhs, 0, sizeof(rhs));        
 
         if(!node.IsMap()) {
             return false;
@@ -88,12 +102,23 @@ template<> struct convert<ae_params_t> {
             range_index += 1;
         }
 
-        if (node["cur_y_from_cc_pixels"]) {
+        if (node["cur_y_from_cc_pixels"].IsDefined()) {
             rhs.cur_y_from_cc_pixels = node["cur_y_from_cc_pixels"].as<uint8_t>();
         }
         else {
             rhs.cur_y_from_cc_pixels = 0;
         }
+
+        if (node["periodic_fixed_exposure_gain_switch"].IsDefined()) {
+            rhs.periodic_fixed_exposure_gain_switch.enable = node["periodic_fixed_exposure_gain_switch"]["enable"].as<bool>();
+            rhs.periodic_fixed_exposure_gain_switch.num_frames_per_config = node["periodic_fixed_exposure_gain_switch"]["num_frames_per_config"].as<uint32_t>();
+            rhs.periodic_fixed_exposure_gain_switch.num_configs = node["periodic_fixed_exposure_gain_switch"]["num_configs"].as<uint32_t>();
+
+            for (uint32_t i=0; i<rhs.periodic_fixed_exposure_gain_switch.num_configs; i+=1) {
+                rhs.periodic_fixed_exposure_gain_switch.configs[i].exposure_msec = node["periodic_fixed_exposure_gain_switch"]["configs"][i]["exposure_msec"].as<uint32_t>();
+                rhs.periodic_fixed_exposure_gain_switch.configs[i].analog_gain = node["periodic_fixed_exposure_gain_switch"]["configs"][i]["analog_gain"].as<uint32_t>();
+            }   
+        }   
         
         return ret;
     } //struct convert<ae_params_t>
@@ -134,6 +159,7 @@ int ae_params_get_params_from_yaml(const char *path, ae_params_t *p_params)
     }
     catch (const std::runtime_error& e) {
         LOG(ERROR) << "ae_params_get_params_from_yaml " << e.what() << std::endl;
+        memset(p_params, 0, sizeof(ae_params_t));        
         return 0;
     }
 
@@ -186,6 +212,18 @@ void ae_params_dump(ae_params_t *p_params)
     }
 
     LOG(INFO) << "\tcur_y_from_cc_pixels " << p_params->cur_y_from_cc_pixels;
+
+    if (p_params->periodic_fixed_exposure_gain_switch.enable)
+    {
+        LOG(INFO) << "periodic_fixed_exposure_gain_switch.enable " << p_params->periodic_fixed_exposure_gain_switch.enable;
+        LOG(INFO) << "periodic_fixed_exposure_gain_switch.num_frames_per_config " << p_params->periodic_fixed_exposure_gain_switch.num_frames_per_config;
+        LOG(INFO) << "periodic_fixed_exposure_gain_switch.num_configs " << p_params->periodic_fixed_exposure_gain_switch.num_configs;
+
+        for (uint32_t i=0; i<p_params->periodic_fixed_exposure_gain_switch.num_configs; i+=1) {
+            LOG(INFO) << "periodic_fixed_exposure_gain_switch.configs[" << i << "].exposure_msec " << p_params->periodic_fixed_exposure_gain_switch.configs[i].exposure_msec;
+            LOG(INFO) << "periodic_fixed_exposure_gain_switch.configs[" << i << "].analog_gain " << p_params->periodic_fixed_exposure_gain_switch.configs[i].analog_gain;
+        }   
+    }
 }
 
 bool is_glog_en = false;

@@ -1,0 +1,26 @@
+targetBrightnessRange:
+  min: 1
+  max: 2
+targetBrightness: 3
+threshold: 4
+enableBlc: 5
+exposureTimeStepSize: 6
+ranges:
+  - exposureTimeRange:
+      min: 7
+      max: 8
+    analogGainRange:
+      min: 9
+      max: 10
+    digitalGainRange:
+      min: 11
+      max: 12
+cur_y_from_cc_pixels: 0
+periodic_fixed_exposure_gain_switch:
+  enable: true
+  num_frames_per_config: 17
+  configs:
+    - exposure_msec: 111
+      analog_gain: 112
+    - exposure_msec: 113
+      analog_gain: 114
