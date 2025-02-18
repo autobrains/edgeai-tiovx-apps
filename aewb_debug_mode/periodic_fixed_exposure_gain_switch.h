@@ -2,7 +2,6 @@
 #define _PERIODIC_FIXED_EXPOSURE_GAIN_SWITCH_
 
 
-#include "linux_aewb_module.h"
 #include "ti_2a_wrapper.h"
 #include "ae_params.h"
 

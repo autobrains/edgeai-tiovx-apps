@@ -19,8 +19,11 @@ build_lib(aewb_logger      # Named argument: library name
 
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 
-set(AE_PARAMs_HEADERS ../ae_params/ae_params.h)
-install(FILES ${AE_PARAMs_HEADERS} DESTINATION ${INCLUDE_INSTALL_DIR}/ae_params)
+set(AE_PARAMS_HEADERS ../ae_params/ae_params.h)
+install(FILES ${AE_PARAMS_HEADERS} DESTINATION ${INCLUDE_INSTALL_DIR}/ae_params)
+
+set(AEWB_DEBUG_MODE_HEADERS ../aewb_debug_mode/periodic_fixed_exposure_gain_switch.h)
+install(FILES ${AEWB_DEBUG_MODE_HEADERS} DESTINATION ${INCLUDE_INSTALL_DIR}/aewb_debug_mode)
 
 FILE(GLOB AEWB_LOG_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 install(FILES ${AEWB_LOG_HDRS} DESTINATION ${INCLUDE_INSTALL_DIR}/aewb_logger)
