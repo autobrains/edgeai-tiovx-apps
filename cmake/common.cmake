@@ -99,6 +99,7 @@ include_directories(${PROJECT_SOURCE_DIR}
                     ${PROJECT_SOURCE_DIR}/utils/include
                     ${PROJECT_SOURCE_DIR}/aewb_logger/
                     ${PROJECT_SOURCE_DIR}/ae_params/
+                    ${PROJECT_SOURCE_DIR}/aewb_debug_mode/
                     ${PSDK_INCLUDE_PATH}/processor_sdk/ivision
                     ${PSDK_INCLUDE_PATH}/processor_sdk/imaging
                     ${PSDK_INCLUDE_PATH}/processor_sdk/ti-perception-toolkit/include
