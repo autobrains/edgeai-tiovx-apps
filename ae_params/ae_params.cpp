@@ -101,16 +101,56 @@ template<> struct convert<ae_params_t> {
 
 } //namespace YAML
 
-std::string ae_params_get_path() {
-    const char *path1 = std::getenv("AE_PARAMS_PATH");
-    std::string path2 = "./ae_params.yaml";
-    std::string path3 = "/home/root/app/imx728/dcc_3856x2176/ae_params.yaml";
-    std::string path4 = "/home/root/autobrains/imx728/dcc_3856x2176/ae_params.yaml";
-    std::string path5 = "/root/app/imx728/dcc_3856x2176/ae_params.yaml";
-    std::string path6 = "/root/autobrains/imx728/dcc_3856x2176/ae_params.yaml";
-    std::string path7 = "/home/app/imx728/dcc_3856x2176/ae_params.yaml";
-    std::string path8 = "/home/autobrains/imx728/dcc_3856x2176/ae_params.yaml";
+// TODO: clarify if need this thing for the other sensors
+std::string ae_params_get_path(const char *sensor_name) {
+    char *path1 = NULL;
+    std::string path2 = "";
+    std::string path3 = "";
+    std::string path4 = "";
+    std::string path5 = "";
+    std::string path6 = "";
+    std::string path7 = "";
+    std::string path8 = "";
 
+    if (strcmp(sensor_name, "SENSOR_SONY_IMX728") == 0) {
+        path1 = std::getenv("AE_PARAMS_PATH");
+        path2 = "./ae_params.yaml";
+        path3 = "/home/root/app/imx728/dcc_3856x2176/ae_params.yaml";
+        path4 = "/home/root/autobrains/imx728/dcc_3856x2176/ae_params.yaml";
+        path5 = "/root/app/imx728/dcc_3856x2176/ae_params.yaml";
+        path6 = "/root/autobrains/imx728/dcc_3856x2176/ae_params.yaml";
+        path7 = "/home/app/imx728/dcc_3856x2176/ae_params.yaml";
+        path8 = "/home/autobrains/imx728/dcc_3856x2176/ae_params.yaml";
+    } else if (strcmp(sensor_name, "SENSOR_OX08D10") == 0) {
+        path1 = std::getenv("AE_PARAMS_PATH_OX08D10");
+        path2 = "./ae_params_ox08d10.yaml";
+        path3 = "/home/root/app/ox08d10/dcc_3840x2160/ae_params.yaml";
+        path4 = "/home/root/autobrains/ox08d10/dcc_3840x2160/ae_params.yaml";
+        path5 = "/root/app/ox08d10/dcc_3840x2160/ae_params.yaml";
+        path6 = "/root/autobrains/ox08d10/dcc_3840x2160/ae_params.yaml";
+        path7 = "/home/app/ox08d10/dcc_3840x2160/ae_params.yaml";
+        path8 = "/home/autobrains/ox08d10/dcc_3840x2160/ae_params.yaml";
+    } else if (strcmp(sensor_name, "SENSOR_SONY_IMX031") == 0) {
+        path1 = std::getenv("AE_PARAMS_PATH_IMX031");
+        path2 = "./ae_params_imx031.yaml";
+        path3 = "/home/root/app/imx031/dcc_1920x1380/ae_params.yaml";
+        path4 = "/home/root/autobrains/imx031/dcc_1920x1380/ae_params.yaml";
+        path5 = "/root/app/imx031/dcc_1920x1380/ae_params.yaml";
+        path6 = "/root/autobrains/imx031/dcc_1920x1380/ae_params.yaml";
+        path7 = "/home/app/imx031/dcc_1920x1380/ae_params.yaml";
+        path8 = "/home/autobrains/imx031/dcc_1920x1380/ae_params.yaml";
+    } else if (strcmp(sensor_name, "SENSOR_SONY_IMX623") == 0) {
+        path1 = std::getenv("AE_PARAMS_PATH_IMX623");
+        path2 = "./ae_params_imx623.yaml";
+        path3 = "/home/root/app/imx623/dcc_1920x1280/ae_params.yaml";
+        path4 = "/home/root/autobrains/imx623/dcc_1920x1280/ae_params.yaml";
+        path5 = "/root/app/imx623/dcc_1920x1280/ae_params.yaml";
+        path6 = "/root/autobrains/imx623/dcc_1920x1280/ae_params.yaml";
+        path7 = "/home/app/imx623/dcc_1920x1280/ae_params.yaml";
+        path8 = "/home/autobrains/imx623/dcc_1920x1280/ae_params.yaml";
+    } else {
+        return "";
+    }
 
     if (path1!=NULL and fs::exists(path1)) {
         return path1;
@@ -161,12 +201,12 @@ int ae_params_get_params_from_yaml(const char *path, ae_params_t *p_params)
     return 1;
 }
 
-int ae_params_get(ae_params_t *p_params)
+int ae_params_get_for_sensor(const char *sensor_name, ae_params_t *p_params)
 {
     int ret = 0;
     memset(p_params, 0, sizeof(ae_params_t));
 
-    std::string path = ae_params_get_path();
+    std::string path = ae_params_get_path(sensor_name);
     if (path=="") {
         LOG(ERROR) << "ae_params_get() path==NULL";
         return 0;
@@ -185,6 +225,11 @@ int ae_params_get(ae_params_t *p_params)
     google::FlushLogFiles(google::INFO);
 
     return 1;
+}
+
+int ae_params_get(ae_params_t *p_params)
+{
+    return ae_params_get_for_sensor("SENSOR_SONY_IMX728", p_params);
 }
 
 void ae_params_dump(ae_params_t *p_params)

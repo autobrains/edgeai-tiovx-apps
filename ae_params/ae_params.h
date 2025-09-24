@@ -13,6 +13,7 @@ typedef struct {
     int cur_y_from_cc_pixels;
 } ae_params_t;
 
+extern int ae_params_get_for_sensor(const char *sensor_name, ae_params_t *p_params);
 extern int ae_params_get(ae_params_t *p_params);
 extern int ae_params_get_params_from_yaml(const char *path, ae_params_t *p_params);
 extern void ae_params_dump(ae_params_t *p_params);

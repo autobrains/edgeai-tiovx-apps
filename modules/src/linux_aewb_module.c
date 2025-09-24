@@ -724,6 +724,105 @@ void get_ox05b1s_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
    p_ae_dynPrms->numAeDynParams = count;
 }
 
+void get_ox08d10_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
+{
+// #ifndef AE_PARAMS_FROM_FILE
+#if 1
+    // TODO: implement. currently copied from imx728
+    uint8_t count = 0;
+
+    p_ae_dynPrms->targetBrightnessRange.min = 30;
+    p_ae_dynPrms->targetBrightnessRange.max = 50;
+    p_ae_dynPrms->targetBrightness = 45;
+    p_ae_dynPrms->threshold = 5;
+    p_ae_dynPrms->enableBlc = 0;
+
+    p_ae_dynPrms->exposureTimeStepSize         = 1000; // usec
+    p_ae_dynPrms->exposureTimeRange[count].min = 5000;
+    p_ae_dynPrms->exposureTimeRange[count].max = 5000;
+    p_ae_dynPrms->analogGainRange[count].min = 1*1024;
+    p_ae_dynPrms->analogGainRange[count].max = 32228*1024;
+    p_ae_dynPrms->digitalGainRange[count].min = 256;
+    p_ae_dynPrms->digitalGainRange[count].max = 256;
+    count++;
+
+    p_ae_dynPrms->numAeDynParams = count;
+#else
+    ae_params_t ae_params;
+    ae_params_get_for_sensor("SENSOR_OX08D10", &ae_params);
+    memcpy(p_ae_dynPrms, &ae_params.dyn_params, sizeof(IssAeDynamicParams));
+    TI_AE_set_cur_y_from_cc_pixels(ae_params.cur_y_from_cc_pixels);
+
+#endif
+
+}
+
+void get_imx031_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
+{
+// #ifndef AE_PARAMS_FROM_FILE
+#if 1
+    // TODO: implement. currently copied from imx728
+    uint8_t count = 0;
+
+    p_ae_dynPrms->targetBrightnessRange.min = 30;
+    p_ae_dynPrms->targetBrightnessRange.max = 50;
+    p_ae_dynPrms->targetBrightness = 45;
+    p_ae_dynPrms->threshold = 5;
+    p_ae_dynPrms->enableBlc = 0;
+
+    p_ae_dynPrms->exposureTimeStepSize         = 1000; // usec
+    p_ae_dynPrms->exposureTimeRange[count].min = 5000;
+    p_ae_dynPrms->exposureTimeRange[count].max = 5000;
+    p_ae_dynPrms->analogGainRange[count].min = 1*1024;
+    p_ae_dynPrms->analogGainRange[count].max = 32228*1024;
+    p_ae_dynPrms->digitalGainRange[count].min = 256;
+    p_ae_dynPrms->digitalGainRange[count].max = 256;
+    count++;
+
+    p_ae_dynPrms->numAeDynParams = count;
+#else
+    ae_params_t ae_params;
+    ae_params_get_for_sensor("SENSOR_SONY_IMX031", &ae_params);
+    memcpy(p_ae_dynPrms, &ae_params.dyn_params, sizeof(IssAeDynamicParams));
+    TI_AE_set_cur_y_from_cc_pixels(ae_params.cur_y_from_cc_pixels);
+
+#endif
+
+}
+
+void get_imx623_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
+{
+// #ifndef AE_PARAMS_FROM_FILE
+#if 1
+    // TODO: implement. currently copied from imx728
+    uint8_t count = 0;
+
+    p_ae_dynPrms->targetBrightnessRange.min = 30;
+    p_ae_dynPrms->targetBrightnessRange.max = 50;
+    p_ae_dynPrms->targetBrightness = 45;
+    p_ae_dynPrms->threshold = 5;
+    p_ae_dynPrms->enableBlc = 0;
+
+    p_ae_dynPrms->exposureTimeStepSize         = 1000; // usec
+    p_ae_dynPrms->exposureTimeRange[count].min = 5000;
+    p_ae_dynPrms->exposureTimeRange[count].max = 5000;
+    p_ae_dynPrms->analogGainRange[count].min = 1*1024;
+    p_ae_dynPrms->analogGainRange[count].max = 32228*1024;
+    p_ae_dynPrms->digitalGainRange[count].min = 256;
+    p_ae_dynPrms->digitalGainRange[count].max = 256;
+    count++;
+
+    p_ae_dynPrms->numAeDynParams = count;
+#else
+    ae_params_t ae_params;
+    ae_params_get_for_sensor("SENSOR_SONY_IMX623", &ae_params);
+    memcpy(p_ae_dynPrms, &ae_params.dyn_params, sizeof(IssAeDynamicParams));
+    TI_AE_set_cur_y_from_cc_pixels(ae_params.cur_y_from_cc_pixels);
+
+#endif
+
+}
+
 void gst_tiovx_isp_map_2A_values (char *sensor_name, int exposure_time,
     int analog_gain, int *exposure_time_mapped, int *analog_gain_mapped)
 {
@@ -750,6 +849,18 @@ void gst_tiovx_isp_map_2A_values (char *sensor_name, int exposure_time,
   } else if (strcmp(sensor_name, "SENSOR_OX05B1S") == 0) {
       *exposure_time_mapped = (int) ((double)exposure_time * 2128 * 60 / 1000000 + 0.5);
       *analog_gain_mapped = analog_gain / 64;
+  } else if (strcmp(sensor_name, "SENSOR_OX08D10") == 0) {
+      // TODO: implement. currently copied from imx728
+      *analog_gain_mapped = (int)((log2(analog_gain) - 10.0) * 60.0);
+      *exposure_time_mapped = exposure_time;
+  } else if (strcmp(sensor_name, "SENSOR_SONY_IMX031") == 0) {
+      // TODO: implement. currently copied from imx728
+      *analog_gain_mapped = (int)((log2(analog_gain) - 10.0) * 60.0);
+      *exposure_time_mapped = exposure_time;
+  } else if (strcmp(sensor_name, "SENSOR_SONY_IMX623") == 0) {
+      // TODO: implement. currently copied from imx728
+      *analog_gain_mapped = (int)((log2(analog_gain) - 10.0) * 60.0);
+      *exposure_time_mapped = exposure_time;
   } else {
       TIOVX_MODULE_ERROR("[AEWB] Unknown sensor: %s", sensor_name);
   }
@@ -847,9 +958,16 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg)
       get_ox05b1s_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     } else if (strcmp(cfg->sensor_name, "SENSOR_SONY_IMX728") == 0) {
       get_imx728_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
+    } else if (strcmp(cfg->sensor_name, "SENSOR_OX08D10") == 0) {
+      get_ox08d10_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
+    } else if (strcmp(cfg->sensor_name, "SENSOR_SONY_IMX031") == 0) {
+      get_imx031_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
+    } else if (strcmp(cfg->sensor_name, "SENSOR_SONY_IMX623") == 0) {
+      get_imx623_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     } else {
       get_imx219_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     }
+    // TODO: this if-else can be optimized
 
     //aewb_logger_sender_state_ptr = aewb_logger_create_sender("192.168.5.1", 8081);
 
@@ -876,22 +994,27 @@ int aewb_write_to_sensor(AewbHandle *handle)
             handle->sensor_out_data.aePrms.analogGain[0],
             &coarse_integration_time, &analog_gain);
 
-    control.id = V4L2_CID_EXPOSURE;
-    control.value = coarse_integration_time;
+    if (strcmp(handle->cfg.sensor_name, "SENSOR_SONY_IMX728") == 0 ||
+          strcmp(handle->cfg.sensor_name, "SENSOR_OX08D10") == 0 ||
+          strcmp(handle->cfg.sensor_name, "SENSOR_SONY_IMX031") == 0 ||
+          strcmp(handle->cfg.sensor_name, "SENSOR_SONY_IMX623") == 0) {
+        TIOVX_MODULE_ERROR("[AEWB] Stub write to IMX728/OX08D10/IMX031/IMX623. Exposure: %d. AGain: %d", coarse_integration_time, analog_gain);
+        ret = 0;
+    } else {
+        control.id = V4L2_CID_EXPOSURE;
+        control.value = coarse_integration_time;
+        ret = ioctl (handle->fd, VIDIOC_S_CTRL, &control);
+        if (ret < 0) {
+            TIOVX_MODULE_ERROR("[AEWB] Unable to call exposure ioctl: %d", ret);
+            return ret;
+        }
 
-    return 0;
-
-    ret = ioctl (handle->fd, VIDIOC_S_CTRL, &control);
-    if (ret < 0) {
-        TIOVX_MODULE_ERROR("[AEWB] Unable to call exposure ioctl: %d", ret);
-        return ret;
-    }
-
-    control.id = V4L2_CID_ANALOGUE_GAIN;
-    control.value = analog_gain;
-    ret = ioctl (handle->fd, VIDIOC_S_CTRL, &control);
-    if (ret < 0) {
-        TIOVX_MODULE_ERROR("[AEWB] Unable to call analog gain ioctl: %d", ret);
+        control.id = V4L2_CID_ANALOGUE_GAIN;
+        control.value = analog_gain;
+        ret = ioctl (handle->fd, VIDIOC_S_CTRL, &control);
+        if (ret < 0) {
+            TIOVX_MODULE_ERROR("[AEWB] Unable to call analog gain ioctl: %d", ret);
+        }
     }
 
     return ret;
