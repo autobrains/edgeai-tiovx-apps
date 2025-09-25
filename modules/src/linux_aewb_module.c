@@ -589,7 +589,8 @@ static const uint16_t gIMX390GainsTable[ISS_IMX390_GAIN_TBL_SIZE][2U] = {
 
 void get_imx728_ae_dyn_params (IssAeDynamicParams *p_ae_dynPrms)
 {
-#ifndef AE_PARAMS_FROM_FILE
+//#ifndef AE_PARAMS_FROM_FILE
+#if 1
     uint8_t count = 0;
 
     p_ae_dynPrms->targetBrightnessRange.min = 30;
@@ -850,7 +851,7 @@ AewbHandle *aewb_create_handle(AewbCfg *cfg)
       get_imx219_ae_dyn_params (&handle->sensor_in_data.ae_dynPrms);
     }
 
-    aewb_logger_sender_state_ptr = aewb_logger_create_sender("192.168.5.1", 8081);
+    //aewb_logger_sender_state_ptr = aewb_logger_create_sender("192.168.5.1", 8081);
 
     return handle;
 
@@ -877,6 +878,9 @@ int aewb_write_to_sensor(AewbHandle *handle)
 
     control.id = V4L2_CID_EXPOSURE;
     control.value = coarse_integration_time;
+
+    return 0;
+
     ret = ioctl (handle->fd, VIDIOC_S_CTRL, &control);
     if (ret < 0) {
         TIOVX_MODULE_ERROR("[AEWB] Unable to call exposure ioctl: %d", ret);
@@ -915,7 +919,7 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
     if (status) {
         TIOVX_MODULE_ERROR("[AEWB] Process call failed: %d", status);
     }
-
+/*
     aewb_logger_send_log(
         aewb_logger_sender_state_ptr,
         &handle->ti_2a_wrapper,
@@ -925,7 +929,7 @@ int aewb_process(AewbHandle *handle, Buf *h3a_buf, Buf *aewb_buf)
         h3a_ptr,
         aewb_ptr
     );
-
+*/
     vxUnmapUserDataObject ((vx_user_data_object)h3a_buf->handle, h3a_buf_map_id);
     vxUnmapUserDataObject ((vx_user_data_object)aewb_buf->handle, aewb_buf_map_id);
 

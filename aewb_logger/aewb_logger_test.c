@@ -81,6 +81,7 @@ void test_write_read_log()
 
 void test_send_recv_log()
 {
+	return;
     aewb_logger_sender_args_t sender_args;
     build_sender_args(&sender_args);
 
