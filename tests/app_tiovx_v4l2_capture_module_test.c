@@ -63,16 +63,17 @@
 #include <tiovx_modules.h>
 #include <tiovx_utils.h>
 #include <v4l2_capture_module.h>
+#include <stdio.h>
 
 #define APP_BUFQ_DEPTH      (4)
 #define APP_NUM_CH          (1)
-#define APP_NUM_ITERATIONS  (5)
+#define APP_NUM_ITERATIONS  (999999999)
 
-#define INPUT_WIDTH  (1920)
-#define INPUT_HEIGHT (1080)
+#define INPUT_WIDTH  (3856)
+#define INPUT_HEIGHT (2176)
 
-#define SENSOR_NAME "SENSOR_SONY_IMX219_RPI"
-#define DCC_VISS TIOVX_MODULES_IMAGING_PATH"/imx219/linear/dcc_viss.bin"
+#define SENSOR_NAME "SENSOR_SONY_IMX728"
+#define DCC_VISS "/home/root/app/imx728/dcc_3856x2176/dcc_viss_wdr.bin"
 
 vx_status app_modules_v4l2_capture_test(vx_int32 argc, vx_char* argv[])
 {
@@ -94,8 +95,8 @@ vx_status app_modules_v4l2_capture_test(vx_int32 argc, vx_char* argv[])
     cfg.height = INPUT_HEIGHT;
     sprintf(cfg.target_string, TIVX_TARGET_VPAC_VISS1);
 
-    cfg.input_cfg.params.format[0].pixel_container = TIVX_RAW_IMAGE_8_BIT;
-    cfg.input_cfg.params.format[0].msb = 7;
+    cfg.input_cfg.params.format[0].pixel_container = TIVX_RAW_IMAGE_16_BIT;
+    cfg.input_cfg.params.format[0].msb = 11U;
 
     status = tiovx_modules_initialize_graph(&graph);
     node = tiovx_modules_add_node(&graph, TIOVX_VISS, (void *)&cfg);
@@ -108,9 +109,9 @@ vx_status app_modules_v4l2_capture_test(vx_int32 argc, vx_char* argv[])
     v4l2_capture_init_cfg(&v4l2_capture_cfg);
     v4l2_capture_cfg.width = INPUT_WIDTH;
     v4l2_capture_cfg.height = INPUT_HEIGHT;
-    v4l2_capture_cfg.pix_format = V4L2_PIX_FMT_SRGGB8;
+    v4l2_capture_cfg.pix_format = V4L2_PIX_FMT_SRGGB12;
     v4l2_capture_cfg.bufq_depth = APP_BUFQ_DEPTH + 1;
-    sprintf(v4l2_capture_cfg.device, "/dev/video-imx219-cam0");
+    sprintf(v4l2_capture_cfg.device, "/dev/video3");
 
     v4l2_capture_handle = v4l2_capture_create_handle(&v4l2_capture_cfg);
 
@@ -119,29 +120,37 @@ vx_status app_modules_v4l2_capture_test(vx_int32 argc, vx_char* argv[])
         v4l2_capture_enqueue_buf(v4l2_capture_handle, inbuf);
     }
 
+    outbuf = tiovx_modules_acquire_buf(out_buf_pool);
+
     v4l2_capture_start(v4l2_capture_handle);
 
     for (int i = 0; i < APP_NUM_ITERATIONS; i++) {
-        inbuf = v4l2_capture_dqueue_buf(v4l2_capture_handle);
-        tiovx_modules_enqueue_buf(inbuf);
 
-        outbuf = tiovx_modules_acquire_buf(out_buf_pool);
+        do {
+            printf("dequeue input\n");
+            inbuf = v4l2_capture_dqueue_buf(v4l2_capture_handle);
+        } while (inbuf == NULL);
+
+        printf("enqueue graph\n");
+        tiovx_modules_enqueue_buf(inbuf);
         tiovx_modules_enqueue_buf(outbuf);
 
+        printf("schedule graph\n");
         tiovx_modules_schedule_graph(&graph);
         tiovx_modules_wait_graph(&graph);
 
+        printf("dequeue graph\n");
         inbuf = tiovx_modules_dequeue_buf(in_buf_pool);
         outbuf = tiovx_modules_dequeue_buf(out_buf_pool);
 
+        printf("enqueue input\n");
         v4l2_capture_enqueue_buf(v4l2_capture_handle, inbuf);
 
-        sprintf(output_filename,
-                "%s/output/imx219_1920x1080_v4l2_capture_nv12_%d.yuv",
-                EDGEAI_DATA_PATH, i);
+        // sprintf(output_filename,
+        //         "./imx219_1920x1080_v4l2_capture_nv12_%d.yuv", i);
 
-        writeImage(output_filename, (vx_image)outbuf->handle);
-        tiovx_modules_release_buf(outbuf);
+        // writeImage(output_filename, (vx_image)outbuf->handle);
+        // tiovx_modules_release_buf(outbuf);
     }
 
     v4l2_capture_stop(v4l2_capture_handle);
